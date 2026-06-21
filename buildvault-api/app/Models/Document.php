@@ -46,7 +46,9 @@ class Document extends Model
      */
     public function latestVersion(): HasOne
     {
-        return $this->hasOne(DocumentVersion::class, 'document_id')->latestOfMany('version_number');
+        return $this->hasOne(DocumentVersion::class, 'document_id')
+            ->orderByDesc('version_number')
+            ->orderByDesc('created_at');
     }
 
     /**
