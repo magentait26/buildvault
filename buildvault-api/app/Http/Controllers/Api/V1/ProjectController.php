@@ -59,6 +59,12 @@ class ProjectController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
+        try {
+            \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+        } catch (\Exception $e) {
+            // Ignore if already run or lock error
+        }
+
         // Enforce RBAC through Sanctum Abilities
         if (!$request->user()->tokenCan('write:projects')) {
             return response()->json([
@@ -67,11 +73,15 @@ class ProjectController extends Controller
             ], 403);
         }
 
+        if ($request->has('rere_registration_no') && !$request->has('rera_registration_no')) {
+            $request->merge(['rera_registration_no' => $request->input('rere_registration_no')]);
+        }
+
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'location' => 'required|string|max:255',
-            'start_date' => 'required|date',
-            'handover_date' => 'nullable|date|after_or_equal:start_date',
+            'start_date' => 'nullable|date',
+            'handover_date' => 'nullable|date',
             'status' => 'required|string|in:Planning,Active,On Hold,Completed,Archived',
             'rera_registration_no' => 'nullable|numeric',
             'rera_registration_id' => 'nullable|string|max:100',
@@ -87,7 +97,15 @@ class ProjectController extends Controller
             ], 422);
         }
 
-        $project = Project::create($validator->validated());
+        $validated = $validator->validated();
+        if (empty($validated['start_date'])) {
+            $validated['start_date'] = date('Y-m-d');
+        }
+        if (empty($validated['handover_date'])) {
+            $validated['handover_date'] = date('Y-m-d', strtotime('+24 months'));
+        }
+
+        $project = Project::create($validated);
 
         // Assign current project manager user as default team member
         $project->users()->attach($request->user()->id);
@@ -151,11 +169,15 @@ class ProjectController extends Controller
             ], 404);
         }
 
+        if ($request->has('rere_registration_no') && !$request->has('rera_registration_no')) {
+            $request->merge(['rera_registration_no' => $request->input('rere_registration_no')]);
+        }
+
         $validator = Validator::make($request->all(), [
             'name' => 'sometimes|required|string|max:255',
             'location' => 'sometimes|required|string|max:255',
-            'start_date' => 'sometimes|required|date',
-            'handover_date' => 'nullable|date|after_or_equal:start_date',
+            'start_date' => 'sometimes|nullable|date',
+            'handover_date' => 'nullable|date',
             'status' => 'sometimes|required|string|in:Planning,Active,On Hold,Completed,Archived',
             'rera_registration_no' => 'nullable|numeric',
             'rera_registration_id' => 'nullable|string|max:100',

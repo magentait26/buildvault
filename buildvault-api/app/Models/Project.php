@@ -25,10 +25,30 @@ class Project extends Model
         'description',
     ];
 
+    protected $appends = [
+        'rere_registration_no',
+    ];
+
     protected $casts = [
         'start_date' => 'date',
         'handover_date' => 'date',
     ];
+
+    /**
+     * Get the backward-compatible RERA registration number typo.
+     */
+    public function getRereRegistrationNoAttribute()
+    {
+        return $this->rera_registration_no;
+    }
+
+    /**
+     * Set the backward-compatible RERA registration number typo.
+     */
+    public function setRereRegistrationNoAttribute($value)
+    {
+        $this->attributes['rera_registration_no'] = $value;
+    }
 
     /**
      * Users/staff assigned to this project

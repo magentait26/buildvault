@@ -111,12 +111,19 @@ export class ApiClient {
   }
 
   static async createProject(orgId: string, project: Omit<Project, 'id' | 'organizationId'>): Promise<Project> {
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    
+    const handoverDate = new Date();
+    handoverDate.setMonth(handoverDate.getMonth() + 24);
+    const handoverStr = handoverDate.toISOString().split('T')[0];
+
     const payload = {
       name: project.name,
       location: project.location,
-      start_date: project.startDate,
-      handover_date: project.endDate || null,
-      status: project.status,
+      start_date: project.startDate || todayStr,
+      handover_date: project.endDate || handoverStr,
+      status: project.status || 'Active',
       rera_registration_no: 1234, // numerical fallback
       rera_registration_id: project.code || 'RERA-123',
       project_code: project.code || null,
