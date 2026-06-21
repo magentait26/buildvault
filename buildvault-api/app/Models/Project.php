@@ -20,6 +20,9 @@ class Project extends Model
         'status',
         'rera_registration_no',
         'rera_registration_id',
+        'project_code',
+        'category',
+        'description',
     ];
 
     protected $casts = [

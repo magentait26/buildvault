@@ -96,9 +96,9 @@ export class ApiClient {
       id: p.id,
       organizationId: orgId,
       name: p.name,
-      code: p.rera_registration_id || p.id,
+      code: p.project_code || p.rera_registration_id || p.id,
       location: p.location,
-      projectType: p.project_type || 'Residential',
+      projectType: p.category || p.project_type || 'Residential',
       description: p.description || '',
       status: p.status || 'Active',
       startDate: p.start_date || p.created_at?.split('T')[0] || '',
@@ -119,6 +119,9 @@ export class ApiClient {
       status: project.status,
       rera_registration_no: 1234, // numerical fallback
       rera_registration_id: project.code || 'RERA-123',
+      project_code: project.code || null,
+      category: project.projectType || null,
+      description: project.description || null,
     };
 
     const res = await this.request<{ success: boolean; project: any }>('/projects', {
@@ -132,9 +135,9 @@ export class ApiClient {
       id: p.id,
       organizationId: orgId,
       name: p.name,
-      code: p.rera_registration_id || p.id,
+      code: p.project_code || p.rera_registration_id || p.id,
       location: p.location,
-      projectType: p.project_type || 'Residential',
+      projectType: p.category || p.project_type || 'Residential',
       description: p.description || '',
       status: p.status,
       startDate: p.start_date,
@@ -150,7 +153,12 @@ export class ApiClient {
     if (updates.startDate) payload.start_date = updates.startDate;
     if (updates.endDate) payload.handover_date = updates.endDate;
     if (updates.status) payload.status = updates.status;
-    if (updates.code) payload.rera_registration_id = updates.code;
+    if (updates.code) {
+      payload.rera_registration_id = updates.code;
+      payload.project_code = updates.code;
+    }
+    if (updates.projectType) payload.category = updates.projectType;
+    if (updates.description) payload.description = updates.description;
 
     const res = await this.request<{ success: boolean; project: any }>(`/projects/${projectId}`, {
       method: 'PUT',
@@ -163,9 +171,9 @@ export class ApiClient {
       id: p.id,
       organizationId: orgId,
       name: p.name,
-      code: p.rera_registration_id || p.id,
+      code: p.project_code || p.rera_registration_id || p.id,
       location: p.location,
-      projectType: p.project_type || 'Residential',
+      projectType: p.category || p.project_type || 'Residential',
       description: p.description || '',
       status: p.status,
       startDate: p.start_date,

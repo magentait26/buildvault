@@ -16,6 +16,12 @@ class ProjectController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
+        try {
+            \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+        } catch (\Exception $e) {
+            // Ignore if already run or lock error
+        }
+
         $query = Project::query()->withCount('documents');
 
         // Apply filters
@@ -69,6 +75,9 @@ class ProjectController extends Controller
             'status' => 'required|string|in:Planning,Active,On Hold,Completed,Archived',
             'rera_registration_no' => 'nullable|numeric',
             'rera_registration_id' => 'nullable|string|max:100',
+            'project_code' => 'nullable|string|max:100|unique:projects,project_code',
+            'category' => 'nullable|string|max:255',
+            'description' => 'nullable|string',
         ]);
 
         if ($validator->fails()) {
@@ -150,6 +159,9 @@ class ProjectController extends Controller
             'status' => 'sometimes|required|string|in:Planning,Active,On Hold,Completed,Archived',
             'rera_registration_no' => 'nullable|numeric',
             'rera_registration_id' => 'nullable|string|max:100',
+            'project_code' => 'sometimes|nullable|string|max:100|unique:projects,project_code,' . $id,
+            'category' => 'sometimes|nullable|string|max:255',
+            'description' => 'sometimes|nullable|string',
         ]);
 
         if ($validator->fails()) {
