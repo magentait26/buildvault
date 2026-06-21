@@ -1,0 +1,25 @@
+node_modules/
+build/
+dist/
+coverage/
+.DS_Store
+*.log
+.env*
+!.env.example
+
+# External database data directories
+postgres-data/
+
+# Subproject dependency directories
+buildvault-api/vendor/
+buildvault-web/node_modules/
+buildvault-web/dist/
+
+# PHP / Laravel system files
+buildvault-api/.env
+buildvault-api/bootstrap/cache/*
+buildvault-api/storage/logs/*.log
+buildvault-api/storage/framework/cache/data/*
+buildvault-api/storage/framework/sessions/*
+buildvault-api/storage/framework/views/*.php
+buildvault-api/storage/framework/testing/*

@@ -1,0 +1,74 @@
+version: '3.8'
+
+services:
+  # 1. Frontend Web Service (React/Vite compiled & served via Nginx)
+  buildvault-web:
+    build:
+      context: ./buildvault-web
+      dockerfile: Dockerfile
+    container_name: buildvault-web
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - buildvault-api
+    networks:
+      - buildvault-network
+
+  # 2. Backend API Service (PHP 8.2 FPM + Laravel 12)
+  buildvault-api:
+    build:
+      context: ./buildvault-api
+      dockerfile: Dockerfile
+    container_name: buildvault-api
+    restart: unless-stopped
+    volumes:
+      - buildvault-storage:/var/www/storage
+    env_file:
+      - ./buildvault-api/.env
+    depends_on:
+      - buildvault-db
+    networks:
+      - buildvault-network
+
+  # 3. Secure Production PostgreSQL Database Service
+  buildvault-db:
+    image: postgres:16-alpine
+    container_name: buildvault-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-buildvault_prod}
+      POSTGRES_USER: ${DB_USERNAME:-buildvault_admin}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-vault_secure_password_993}
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432" # Safe Localhost binding only (prevent public database port scanning)
+    networks:
+      - buildvault-network
+
+  # 4. Nginx Internal Gateway & Asset Server (Acts as proxy between API and Web containers)
+  buildvault-nginx:
+    image: nginx:alpine
+    container_name: buildvault-nginx
+    restart: unless-stopped
+    ports:
+      - "8080:80" # Supplementary API exposure port if separated from main web domain
+    volumes:
+      - ./nginx:/etc/nginx/conf.d
+      - buildvault-storage:/var/www/storage
+    depends_on:
+      - buildvault-api
+    networks:
+      - buildvault-network
+
+volumes:
+  buildvault-storage:
+    driver: local
+  postgres-data:
+    driver: local
+
+networks:
+  buildvault-network:
+    driver: bridge

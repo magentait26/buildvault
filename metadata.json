@@ -1,0 +1,6 @@
+{
+  "name": "BuildVault",
+  "description": "Secure real estate project document, statutory clearance compliance ledger, and multi-tier approval management platform.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
