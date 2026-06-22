@@ -14,7 +14,8 @@ interface SettingsViewProps {
 
 type TabType = 
   | 'organization' 
-  | 'projects' 
+  | 'project_categories' 
+  | 'document_categories' 
   | 'permissions' 
   | 'integrations' 
   | 'notifications' 
@@ -332,16 +333,31 @@ export default function SettingsView({ onAddLog }: SettingsViewProps) {
     documentPermissions: { upload: false, view: false, delete: false }
   };
 
+  const approval_module_enabled = settings.subscription?.enabledModules?.includes('approvals') ?? false;
+  const compliance_module_enabled = settings.subscription?.enabledModules?.includes('compliance') ?? false;
+  const integrations_module_enabled = settings.subscription?.enabledModules?.includes('integrations') ?? false;
+  const notifications_module_enabled = settings.subscription?.enabledModules?.includes('alerts') ?? false;
+
+  const settingsTabs = [
+    { id: 'organization', label: '1. Organization Details', icon: Building2, show: true },
+    { id: 'project_categories', label: '2. Project Categories', icon: Sliders, show: true },
+    { id: 'document_categories', label: '3. Document Categories', icon: Sliders, show: true },
+    { id: 'storage', label: '4. Storage Settings', icon: Database, show: true },
+    { id: 'permissions', label: '5. Users & Roles', icon: Lock, show: true },
+    { id: 'security', label: '6. Security', icon: ShieldCheck, show: true },
+    { id: 'compliance', label: 'Quality & compliance', icon: CheckCircle2, show: compliance_module_enabled },
+    { id: 'notifications', label: 'Notification Routing', icon: Bell, show: notifications_module_enabled },
+    { id: 'integrations', label: 'Third-party gateways', icon: Link, show: integrations_module_enabled },
+    { id: 'subscription', label: 'System Modules Config', icon: Sparkles, show: true }
+  ];
+
   return (
     <div className="max-w-[1400px] mx-auto space-y-6 animate-in fade-in duration-200">
       
       {/* Title block */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <span className="text-[10px] uppercase font-bold text-[#115e59] dark:text-emerald-400 block tracking-widest font-mono">
-            SECURE ENTERPRISE BACK COCKPIT
-          </span>
-          <h2 className="text-xl font-extrabold tracking-tight text-slate-900 font-sans mt-0.5">Settings Dashboard</h2>
+          <h2 className="text-xl font-extrabold tracking-tight text-slate-900 font-sans mt-0.5">Settings</h2>
           <p className="text-xs text-slate-500 mt-0.5 font-sans">
             Configure metadata, authorization filters, notifications, and telemetry connectors isolated for: <span className="font-extrabold text-[#115e59]">{currentOrg.name}</span>
           </p>
@@ -362,49 +378,41 @@ export default function SettingsView({ onAddLog }: SettingsViewProps) {
         <div className="col-span-1 space-y-3">
           <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-3xs space-y-1.5">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block font-sans px-2">
-              Sectors Directory
+              Settings Sections
             </span>
             <nav className="space-y-1">
-              {[
-                { id: 'organization', label: '1. Organization Details', icon: Building2 },
-                { id: 'projects', label: '2. Project Parameters', icon: Sliders },
-                { id: 'permissions', label: '3. Role permissions', icon: Lock },
-                { id: 'integrations', label: '4. Third-party gateways', icon: Link },
-                { id: 'notifications', label: '5. Notification Routing', icon: Bell },
-                { id: 'compliance', label: '6. Quality & compliance', icon: CheckCircle2 },
-                { id: 'storage', label: '7. Cloud Storage config', icon: Database },
-                { id: 'security', label: '8. Access & Firewalls', icon: ShieldCheck },
-                { id: 'subscription', label: '9. System Modules Config', icon: Sparkles }
-              ].map(tab => {
-                const Icon = tab.icon;
-                const isSelected = activeTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => {
-                      setActiveTab(tab.id as TabType);
-                      setTestResult(null);
-                    }}
-                    className={`w-full text-left text-xs font-semibold py-3 px-4 rounded-xl flex items-center gap-3 transition-all ${
-                      isSelected
-                        ? 'bg-[#115e59] text-white shadow-xs'
-                        : 'text-slate-600 hover:bg-[#eefcf9]/80 hover:text-[#115e59]'
-                    }`}
-                  >
-                    <Icon className="w-4 h-4 shrink-0" />
-                    <span>{tab.label}</span>
-                  </button>
-                );
-              })}
+              {settingsTabs
+                .filter(tab => tab.show)
+                .map(tab => {
+                  const Icon = tab.icon;
+                  const isSelected = activeTab === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => {
+                        setActiveTab(tab.id as TabType);
+                        setTestResult(null);
+                      }}
+                      className={`w-full text-left text-xs font-semibold py-3 px-4 rounded-xl flex items-center gap-3 transition-all ${
+                        isSelected
+                          ? 'bg-[#115e59] text-white shadow-xs'
+                          : 'text-slate-600 hover:bg-[#eefcf9]/80 hover:text-[#115e59]'
+                      }`}
+                    >
+                      <Icon className="w-4 h-4 shrink-0" />
+                      <span>{tab.label}</span>
+                    </button>
+                  );
+                })}
             </nav>
           </div>
 
           <div className="bg-[#ebf5f3] border border-[#bfe0d8] rounded-2xl p-4.5 space-y-2">
             <div className="flex items-center gap-1.5 text-xs font-bold text-[#115e59]">
               <ShieldCheck className="w-4 h-4" />
-              <span>Enterprise Isolation Guard</span>
+              <span>Security Notice</span>
             </div>
-            <p className="text-[10.5px] leading-relaxed text-slate-600">
+            <p className="text-[10.5px] leading-relaxed text-slate-600 font-sans">
               Settings altered here are applied using strict organization boundaries. Database pipelines are locked within legal schema bounds of <span className="font-bold">{currentOrg.name}</span>.
             </p>
           </div>
@@ -579,8 +587,8 @@ export default function SettingsView({ onAddLog }: SettingsViewProps) {
             </div>
           )}
 
-          {/* TAB 2: Project Parameters */}
-          {activeTab === 'projects' && (
+          {/* TAB 2: Project Categories */}
+          {activeTab === 'project_categories' && (
             <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-3xs space-y-6 animate-in fade-in duration-200">
               <div className="flex justify-between items-center pb-3 border-b border-slate-100">
                 <div className="flex items-center gap-2.5">
@@ -588,59 +596,82 @@ export default function SettingsView({ onAddLog }: SettingsViewProps) {
                     <Sliders className="w-4 h-4" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-sm text-slate-900">Project Parameters</h3>
-                    <p className="text-[11px] text-slate-500">Configure global tags, legal categories, and document workflow channels.</p>
+                    <h3 className="font-bold text-sm text-slate-900">Project Categories</h3>
+                    <p className="text-[11px] text-slate-500">Configure global metadata and typology groups used for organizing your property pipeline projects.</p>
                   </div>
                 </div>
                 <button
                   type="button"
-                  onClick={() => handleSave('Project Parameters')}
+                  onClick={() => handleSave('Project Categories')}
                   className="px-4 py-1.5 text-xxs font-bold uppercase tracking-wider text-white bg-[#115e59] hover:bg-[#0d4a46] rounded-lg transition-colors cursor-pointer flex items-center gap-1"
                 >
                   Save Section
                 </button>
               </div>
 
-              <div className="space-y-5 divide-y divide-slate-100">
-                
-                {/* 1. Project Categories */}
-                <div className="space-y-3 pt-1">
-                  <label className="text-xxs font-bold text-slate-400 uppercase tracking-wide block font-mono">
-                    Project Typology Categories
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    {settings.projects.projectCategories.map((cat, i) => (
-                      <span key={cat} className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 bg-[#f2faf7] border border-[#bfe0d8] text-[#115e59] rounded-full">
-                        <span>{cat}</span>
-                        <button type="button" onClick={() => removeCategory(i)} className="text-xs hover:text-red-600 font-bold font-sans">
-                          <X className="w-3 h-3 stroke-[2.5]" />
-                        </button>
-                      </span>
-                    ))}
+              <div className="space-y-4 pt-1">
+                <label className="text-xxs font-bold text-slate-400 uppercase tracking-wide block font-mono">
+                  Project Typology Categories
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {settings.projects.projectCategories.map((cat, i) => (
+                    <span key={cat} className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 bg-[#f2faf7] border border-[#bfe0d8] text-[#115e59] rounded-full font-sans">
+                      <span>{cat}</span>
+                      <button type="button" onClick={() => removeCategory(i)} className="text-xs hover:text-red-600 font-bold font-sans">
+                        <X className="w-3 h-3 stroke-[2.5]" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+                <div className="flex gap-2 max-w-sm">
+                  <input 
+                    type="text" 
+                    placeholder="Add new category (e.g. Mixed-Use)"
+                    value={newCategory}
+                    onChange={e => setNewCategory(e.target.value)}
+                    onKeyPress={e => e.key === 'Enter' && addCategory()}
+                    className="text-xs p-2.5 border border-slate-200 rounded-lg text-slate-800 bg-white focus:outline-none focus:border-[#115e59] flex-1 font-sans"
+                  />
+                  <button type="button" onClick={addCategory} className="px-3 py-2 bg-[#115e59] hover:bg-[#0d4a46] text-white rounded-lg text-xs font-bold font-sans">
+                    Add
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 3: Document Categories */}
+          {activeTab === 'document_categories' && (
+            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-3xs space-y-6 animate-in fade-in duration-200">
+              <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 bg-[#d1e7e2] text-[#115e59] rounded-xl">
+                    <Sliders className="w-4 h-4" />
                   </div>
-                  <div className="flex gap-2 max-w-sm">
-                    <input 
-                      type="text" 
-                      placeholder="Add new category (e.g. Mixed-Use)"
-                      value={newCategory}
-                      onChange={e => setNewCategory(e.target.value)}
-                      onKeyPress={e => e.key === 'Enter' && addCategory()}
-                      className="text-xs p-2.5 border border-slate-200 rounded-lg text-slate-800 bg-white focus:outline-none focus:border-[#115e59] flex-1"
-                    />
-                    <button type="button" onClick={addCategory} className="px-3 py-2 bg-[#115e59] hover:bg-[#0d4a46] text-white rounded-lg text-xs font-bold font-sans">
-                      Add
-                    </button>
+                  <div>
+                    <h3 className="font-bold text-sm text-slate-900">Document Categories</h3>
+                    <p className="text-[11px] text-slate-500">Configure global directories taxonomy and routing checks for documents.</p>
                   </div>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => handleSave('Document Categories')}
+                  className="px-4 py-1.5 text-xxs font-bold uppercase tracking-wider text-white bg-[#115e59] hover:bg-[#0d4a46] rounded-lg transition-colors cursor-pointer flex items-center gap-1"
+                >
+                  Save Section
+                </button>
+              </div>
 
-                {/* 2. Document Categories */}
-                <div className="space-y-3 pt-4">
+              <div className="space-y-6 divide-y divide-slate-155">
+                
+                {/* 1. Document Categories */}
+                <div className="space-y-3 pt-1">
                   <label className="text-xxs font-bold text-slate-400 uppercase tracking-wide block font-mono">
                     Configured Document Directories
                   </label>
                   <div className="flex flex-wrap gap-2">
                     {settings.projects.documentCategories.map((dcat, i) => (
-                      <span key={dcat} className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 bg-slate-50 border border-slate-200 text-slate-700 rounded-full">
+                      <span key={dcat} className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 bg-slate-50 border border-slate-200 text-slate-700 rounded-full font-sans">
                         <span>{dcat}</span>
                         <button type="button" onClick={() => removeDocCategory(i)} className="text-xs hover:text-red-600 font-bold">
                           <X className="w-3 h-3 stroke-[2.5]" />
@@ -651,11 +682,11 @@ export default function SettingsView({ onAddLog }: SettingsViewProps) {
                   <div className="flex gap-2 max-w-sm">
                     <input 
                       type="text" 
-                      placeholder="Add document category (e.g. structural)"
+                      placeholder="Add document category (e.g. Site Photos)"
                       value={newDocCategory}
                       onChange={e => setNewDocCategory(e.target.value)}
                       onKeyPress={e => e.key === 'Enter' && addDocCategory()}
-                      className="text-xs p-2.5 border border-slate-200 rounded-lg text-slate-800 bg-white focus:outline-none focus:border-[#115e59] flex-1"
+                      className="text-xs p-2.5 border border-slate-200 rounded-lg text-slate-800 bg-white focus:outline-none focus:border-[#115e59] flex-1 font-sans"
                     />
                     <button type="button" onClick={addDocCategory} className="px-3 py-2 bg-[#115e59] hover:bg-[#0d4a46] text-white rounded-lg text-xs font-bold font-sans">
                       Add
@@ -663,67 +694,71 @@ export default function SettingsView({ onAddLog }: SettingsViewProps) {
                   </div>
                 </div>
 
-                {/* 3. Approval Stages */}
-                <div className="space-y-3 pt-4">
-                  <label className="text-xxs font-bold text-slate-400 uppercase tracking-wide block font-mono">
-                    Document approval Route stages Sequence
-                  </label>
-                  <p className="text-[10.5px] text-slate-400 leading-normal">
-                    Stages that files can travel through before getting final certified signatures.
-                  </p>
-                  <div className="space-y-2">
-                    {settings.projects.approvalStages.map((stage, i) => (
-                      <div key={stage} className="flex items-center justify-between text-xs font-bold p-3 bg-slate-50 border border-slate-100 rounded-xl max-w-md">
-                        <div className="flex items-center gap-3">
-                          <span className="h-5 w-5 rounded-full bg-[#115e59] text-white text-[10px] font-mono flex items-center justify-center font-bold">
-                            {i + 1}
-                          </span>
-                          <span className="text-slate-800 font-sans">{stage}</span>
-                        </div>
-                        <button type="button" onClick={() => removeApprovalStage(i)} className="text-slate-400 hover:text-red-600 p-1 rounded">
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="flex gap-2 max-w-sm pt-1">
-                    <input 
-                      type="text" 
-                      placeholder="e.g. SRE Safety Check"
-                      value={newApprovalStage}
-                      onChange={e => setNewApprovalStage(e.target.value)}
-                      onKeyPress={e => e.key === 'Enter' && addApprovalStage()}
-                      className="text-xs p-2.5 border border-slate-200 rounded-lg text-slate-800 bg-white focus:outline-none focus:border-[#115e59] flex-1"
-                    />
-                    <button type="button" onClick={addApprovalStage} className="px-3 py-2 bg-[#115e59] hover:bg-[#0d4a46] text-white rounded-lg text-xs font-bold font-sans">
-                      Add
-                    </button>
-                  </div>
-                </div>
-
-                {/* 4. Checklist Templates */}
-                <div className="space-y-3 pt-4">
-                  <label className="text-xxs font-bold text-slate-400 uppercase tracking-wide block font-mono">
-                    Compliance Checklist Templates
-                  </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {settings.projects.complianceChecklists.map((template) => (
-                      <div key={template.id} className="border border-slate-200 bg-white p-4 rounded-xl space-y-2 shadow-3xs">
-                        <div className="flex items-center gap-1.5">
-                          <ClipboardList className="w-4 h-4 text-[#115e59]" />
-                          <h4 className="font-extrabold text-xs text-slate-900">{template.name}</h4>
-                        </div>
-                        <div className="flex flex-wrap gap-1 pt-1">
-                          {template.types.map(t => (
-                            <span key={t} className="text-[9px] font-mono bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">
-                              {t}
+                {/* 2. Approval Stages - Hide unless module enabled */}
+                {approval_module_enabled && (
+                  <div className="space-y-3 pt-5">
+                    <label className="text-xxs font-bold text-slate-400 uppercase tracking-wide block font-mono">
+                      Document approval Route stages Sequence
+                    </label>
+                    <p className="text-[10.5px] text-slate-400 leading-normal">
+                      Stages that files can travel through before getting final certified signatures.
+                    </p>
+                    <div className="space-y-2">
+                      {settings.projects.approvalStages.map((stage, i) => (
+                        <div key={stage} className="flex items-center justify-between text-xs font-bold p-3 bg-slate-50 border border-slate-100 rounded-xl max-w-md">
+                          <div className="flex items-center gap-3">
+                            <span className="h-5 w-5 rounded-full bg-[#115e59] text-white text-[10px] font-mono flex items-center justify-center font-bold">
+                              {i + 1}
                             </span>
-                          ))}
+                            <span className="text-slate-800 font-sans">{stage}</span>
+                          </div>
+                          <button type="button" onClick={() => removeApprovalStage(i)} className="text-slate-400 hover:text-red-600 p-1 rounded">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
+                    <div className="flex gap-2 max-w-sm pt-1">
+                      <input 
+                        type="text" 
+                        placeholder="e.g. SRE Safety Check"
+                        value={newApprovalStage}
+                        onChange={e => setNewApprovalStage(e.target.value)}
+                        onKeyPress={e => e.key === 'Enter' && addApprovalStage()}
+                        className="text-xs p-2.5 border border-slate-200 rounded-lg text-slate-800 bg-white focus:outline-none focus:border-[#115e59] flex-1 font-sans"
+                      />
+                      <button type="button" onClick={addApprovalStage} className="px-3 py-2 bg-[#115e59] hover:bg-[#0d4a46] text-white rounded-lg text-xs font-bold font-sans">
+                        Add
+                      </button>
+                    </div>
                   </div>
-                </div>
+                )}
+
+                {/* 3. Checklist Templates - Hide unless compliance enabled */}
+                {compliance_module_enabled && (
+                  <div className="space-y-3 pt-5 font-sans">
+                    <label className="text-xxs font-bold text-slate-400 uppercase tracking-wide block font-mono">
+                      Compliance Checklist Templates
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {settings.projects.complianceChecklists.map((template) => (
+                        <div key={template.id} className="border border-slate-200 bg-white p-4 rounded-xl space-y-2 shadow-3xs">
+                          <div className="flex items-center gap-1.5">
+                            <ClipboardList className="w-4 h-4 text-[#115e59]" />
+                            <h4 className="font-extrabold text-xs text-slate-900">{template.name}</h4>
+                          </div>
+                          <div className="flex flex-wrap gap-1 pt-1">
+                            {template.types.map(t => (
+                              <span key={t} className="text-[9px] font-mono bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">
+                                {t}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
               </div>
             </div>

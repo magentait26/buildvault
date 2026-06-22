@@ -166,16 +166,21 @@ const DEFAULT_SETTINGS = (orgId: string, orgName: string): TenantSettings => ({
     projectCategories: ['Commercial', 'Residential', 'Infrastructure', 'Industrial'],
     documentCategories: [
       'Land Records',
-      'Legal',
+      'Sale Deeds',
+      'Mother Deeds',
+      'RTC / Mutation',
+      'Khata / Property Tax',
       'RERA',
-      'Approvals',
-      'Construction',
-      'Environmental',
+      'Layout Approval',
+      'Building Plan Approval',
+      'NOCs',
+      'Agreements',
       'Finance',
-      'Contracts',
-      'Sales',
+      'Project Drawings',
+      'Site Photos',
       'Customer Handover',
-      'Litigation'
+      'Legal Cases',
+      'Other Documents'
     ],
     approvalStages: ['Draft Approval', 'SRE Review', 'Legal Consent', 'Director Release', 'Third Party Audit'],
     complianceChecklists: [

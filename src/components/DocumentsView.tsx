@@ -698,7 +698,7 @@ Integrity Hash: SHA256 Secure Asset Cryptographic Proof Verified.`;
                       <th className="py-3 px-4">Document Title / ID</th>
                       <th className="py-3 px-4">Origin Project</th>
                       <th className="py-3 px-4">Metadata Slices</th>
-                      <th className="py-3 px-4">Clearance Status</th>
+                      <th className="py-3 px-4">Document Status</th>
                       <th className="py-3 px-4 text-right">Actions</th>
                     </tr>
                   </thead>
