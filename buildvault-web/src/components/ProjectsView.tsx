@@ -57,6 +57,17 @@ export default function ProjectsView({
   const isApprovalsModuleOn = enabledModules.includes('approvals');
   const isComplianceModuleOn = enabledModules.includes('compliance');
 
+  const projectCategories = settings?.projects?.projectCategories || [
+    'Residential Plots',
+    'Residential Apartments',
+    'Commercial',
+    'Mixed Use',
+    'Industrial',
+    'Villa Layout',
+    'Farm Land',
+    'Other'
+  ];
+
   // Navigation & filter state
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -73,6 +84,13 @@ export default function ProjectsView({
   const [newProjStart, setNewProjStart] = useState('2026-06-15');
   const [newProjEnd, setNewProjEnd] = useState('2028-12-31');
   const [assignedUsers, setAssignedUsers] = useState<string[]>([]);
+
+  // Keep newProjType in sync with loaded projectCategories
+  React.useEffect(() => {
+    if (projectCategories.length > 0 && (!newProjType || !projectCategories.includes(newProjType))) {
+      setNewProjType(projectCategories[0]);
+    }
+  }, [projectCategories, newProjType]);
 
   // Edit states
   const [isEditing, setIsEditing] = useState(false);
@@ -716,14 +734,16 @@ export default function ProjectsView({
                 </div>
                 <div className="space-y-1">
                   <label className="font-semibold text-slate-500 block">Building Category</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Mixed Residential Complex"
+                  <select
                     value={newProjType}
                     onChange={e => setNewProjType(e.target.value)}
-                    className="w-full p-2 border border-slate-205 rounded-lg focus:outline-none"
+                    className="w-full p-2 border border-slate-205 bg-white text-slate-800 rounded-lg focus:outline-none"
                     required
-                  />
+                  >
+                    {projectCategories.map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
 

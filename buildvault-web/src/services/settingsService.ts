@@ -163,7 +163,16 @@ const DEFAULT_SETTINGS = (orgId: string, orgName: string): TenantSettings => ({
     defaultLanguage: 'English',
   },
   projects: {
-    projectCategories: ['Commercial', 'Residential', 'Infrastructure', 'Industrial'],
+    projectCategories: [
+      'Residential Plots',
+      'Residential Apartments',
+      'Commercial',
+      'Mixed Use',
+      'Industrial',
+      'Villa Layout',
+      'Farm Land',
+      'Other'
+    ],
     documentCategories: [
       'Land Records',
       'Sale Deeds',
@@ -391,7 +400,7 @@ const DEFAULT_SETTINGS = (orgId: string, orgName: string): TenantSettings => ({
 });
 
 // Auto-migration wrapper to clean old settings once
-const migrationKey = 'buildvault_has_migrated_modules_reset_v5';
+const migrationKey = 'buildvault_has_migrated_modules_reset_v6';
 if (typeof localStorage !== 'undefined' && localStorage.getItem(migrationKey) !== 'true') {
   localStorage.removeItem('buildvault_settings_tenant_org-1');
   localStorage.removeItem('buildvault_settings_tenant_org-2');

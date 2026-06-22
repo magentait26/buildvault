@@ -71,9 +71,11 @@ export default function DocumentsView({
   const isApprovalsModuleOn = settings?.subscription?.enabledModules?.includes('approvals') ?? false;
   const isComplianceModuleOn = settings?.subscription?.enabledModules?.includes('compliance') ?? false;
 
+  const settingsCategories = (settings?.projects?.documentCategories || CATEGORIES) as DocumentCategory[];
+
   const categories = isApprovalsModuleOn 
-    ? [...CATEGORIES, 'Approvals' as DocumentCategory] 
-    : CATEGORIES;
+    ? [...settingsCategories, 'Approvals' as DocumentCategory] 
+    : settingsCategories;
 
   // Navigation & list controls
   const [selectedProjectId, setSelectedProjectId] = useState<string>('all');
@@ -116,6 +118,13 @@ export default function DocumentsView({
   const [versioningDoc, setVersioningDoc] = useState<Document | null>(null);
   const [showVersionModal, setShowVersionModal] = useState(false);
   const [versionFile, setVersionFile] = useState<File | null>(null);
+
+  // Synchronize dynamic categories
+  React.useEffect(() => {
+    if (categories.length > 0 && !categories.includes(uploadCategory)) {
+      setUploadCategory(categories[0]);
+    }
+  }, [categories, uploadCategory]);
 
   const [actionConfirm, setActionConfirm] = useState<{ type: 'archive' | 'delete'; doc: Document } | null>(null);
   const [isActionLoading, setIsActionLoading] = useState(false);
