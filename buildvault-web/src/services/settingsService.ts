@@ -104,7 +104,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlanDef[] = [
     monthlyPrice: 49,
     maxProjects: 2,
     maxStorageMB: 500,
-    allowedModules: ['dashboard', 'projects', 'documents', 'settings'],
+    allowedModules: ['dashboard', 'projects', 'documents', 'settings', 'users'],
     description: 'Perfect for small, local property builders starting digitization.'
   },
   {
@@ -112,7 +112,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlanDef[] = [
     monthlyPrice: 199,
     maxProjects: 10,
     maxStorageMB: 5000,
-    allowedModules: ['dashboard', 'projects', 'documents', 'compliance', 'settings', 'alerts'],
+    allowedModules: ['dashboard', 'projects', 'documents', 'compliance', 'settings', 'alerts', 'users'],
     description: 'Suited for regional active developers managing multiple compliance boards.'
   },
   {
@@ -381,13 +381,18 @@ const DEFAULT_SETTINGS = (orgId: string, orgName: string): TenantSettings => ({
   subscription: {
     planName: orgId === 'org-1' ? 'Enterprise' : orgId === 'org-2' ? 'Growth' : 'Starter',
     status: 'Active',
-    enabledModules: orgId === 'org-1' 
-      ? ['dashboard', 'projects', 'documents', 'compliance', 'approvals', 'integrations', 'settings', 'alerts', 'users']
-      : orgId === 'org-2'
-        ? ['dashboard', 'projects', 'documents', 'compliance', 'settings', 'alerts']
-        : ['dashboard', 'projects', 'documents', 'settings']
+    enabledModules: ['dashboard', 'projects', 'documents', 'settings', 'users']
   }
 });
+
+// Auto-migration wrapper to clean old settings once
+const migrationKey = 'buildvault_has_migrated_modules_reset_v5';
+if (typeof localStorage !== 'undefined' && localStorage.getItem(migrationKey) !== 'true') {
+  localStorage.removeItem('buildvault_settings_tenant_org-1');
+  localStorage.removeItem('buildvault_settings_tenant_org-2');
+  localStorage.removeItem('buildvault_settings_tenant_org-3');
+  localStorage.setItem(migrationKey, 'true');
+}
 
 export const settingsService = {
   /**

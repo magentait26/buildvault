@@ -35,7 +35,7 @@ export type DocumentCategory =
   | 'Contractor Documents'
   | 'Finance Documents';
 
-export type DocumentStatus = 'Pending' | 'Approved' | 'Rejected' | 'Revision Required';
+export type DocumentStatus = 'Draft' | 'Active' | 'Archived' | 'Expired';
 
 export type ComplianceType =
   | 'RERA Registration'

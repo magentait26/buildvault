@@ -103,9 +103,8 @@ export default function AuthenticatedLayout() {
     // Find matching role authorization boundaries
     const rolePermissionDef = settings?.rolePermissions?.find(rp => rp.roleName === role);
     const isModuleAllowed = (moduleId: string) => {
-      // General safety guards
-      if (role === 'Super Admin') return true;
       const isConfigEnabled = enabledModules.includes(moduleId);
+      if (role === 'Super Admin') return isConfigEnabled;
       const isRoleGranted = rolePermissionDef ? rolePermissionDef.modulesEnabled.includes(moduleId) : true;
       return isConfigEnabled && isRoleGranted;
     };
@@ -127,7 +126,7 @@ export default function AuthenticatedLayout() {
       workspace.push({ id: 'approvals', label: 'Approvals', path: '/approvals', icon: CheckSquare, badge: pendingApprovalsCount });
     }
     if ((isModuleAllowed('dashboard') || isModuleAllowed('projects')) && role !== 'Site Engineer') {
-      workspace.push({ id: 'reports', label: 'Reports', path: '/reports', icon: BarChart3 });
+      workspace.push({ id: 'reports', label: 'Document Analytics', path: '/reports', icon: BarChart3 });
     }
 
     const manage: NavItem[] = [];

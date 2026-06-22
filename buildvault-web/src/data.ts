@@ -143,7 +143,7 @@ export const INITIAL_DOCUMENTS: Document[] = [
     uploadedBy: 'Maya Lin',
     uploadedRole: 'Project Manager',
     latestVersion: 2,
-    status: 'Approved'
+    status: 'Active'
   },
   {
     id: 'doc-102',
@@ -156,7 +156,7 @@ export const INITIAL_DOCUMENTS: Document[] = [
     uploadedBy: 'Marcus Brody',
     uploadedRole: 'Site Engineer',
     latestVersion: 3,
-    status: 'Approved'
+    status: 'Active'
   },
   {
     id: 'doc-103',
@@ -169,7 +169,7 @@ export const INITIAL_DOCUMENTS: Document[] = [
     uploadedBy: 'Maya Lin',
     uploadedRole: 'Project Manager',
     latestVersion: 1,
-    status: 'Approved'
+    status: 'Active'
   },
   {
     id: 'doc-104',
@@ -182,7 +182,7 @@ export const INITIAL_DOCUMENTS: Document[] = [
     uploadedBy: 'Marcus Brody',
     uploadedRole: 'Site Engineer',
     latestVersion: 1,
-    status: 'Pending'
+    status: 'Draft'
   },
   {
     id: 'doc-105',
@@ -195,7 +195,7 @@ export const INITIAL_DOCUMENTS: Document[] = [
     uploadedBy: 'Marcus Brody',
     uploadedRole: 'Site Engineer',
     latestVersion: 2,
-    status: 'Revision Required'
+    status: 'Draft'
   },
 
   // ABC Oasis Residency (p-102) Documents
@@ -210,7 +210,7 @@ export const INITIAL_DOCUMENTS: Document[] = [
     uploadedBy: 'Devon Carter',
     uploadedRole: 'Director',
     latestVersion: 1,
-    status: 'Approved'
+    status: 'Active'
   },
   {
     id: 'doc-107',
@@ -223,7 +223,7 @@ export const INITIAL_DOCUMENTS: Document[] = [
     uploadedBy: 'Fiona Vance',
     uploadedRole: 'Legal Team',
     latestVersion: 1,
-    status: 'Approved'
+    status: 'Active'
   },
 
   // Skyline Heights (p-201) Documents
@@ -238,7 +238,7 @@ export const INITIAL_DOCUMENTS: Document[] = [
     uploadedBy: 'James Patel',
     uploadedRole: 'Project Manager',
     latestVersion: 1,
-    status: 'Approved'
+    status: 'Active'
   },
   {
     id: 'doc-202',
@@ -251,7 +251,7 @@ export const INITIAL_DOCUMENTS: Document[] = [
     uploadedBy: 'Tariq Hussain',
     uploadedRole: 'Site Engineer',
     latestVersion: 2,
-    status: 'Pending'
+    status: 'Draft'
   }
 ];
 

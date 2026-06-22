@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Project, Document, ComplianceRecord, ApprovalTask, ActivityLog, User, Role, ProjectStatus } from '../types';
+import { useAuthStore } from '../store/useAuthStore';
+import { settingsService } from '../services/settingsService';
 import { 
   Building2, Plus, Search, Filter, Calendar, MapPin, Tag, Activity, Users, FileText, 
   CheckSquare, ArrowLeft, Edit3, UserPlus, Info, CheckCircle2, RotateCcw, AlertCircle, X
@@ -49,6 +51,13 @@ export default function ProjectsView({
   onEditProject,
   onAddLog
 }: ProjectsViewProps) {
+  // Permissions & Modules check
+  const { selectedOrgId } = useAuthStore();
+  const settings = settingsService.getTenantSettings(selectedOrgId || 'org-1');
+  const enabledModules = settings?.subscription?.enabledModules || ['dashboard', 'projects', 'documents', 'settings', 'users'];
+  const isApprovalsModuleOn = enabledModules.includes('approvals');
+  const isComplianceModuleOn = enabledModules.includes('compliance');
+
   // Navigation & filter state
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -372,17 +381,31 @@ export default function ProjectsView({
                   <span className="font-semibold text-slate-400">Class</span>
                   <span className="font-semibold text-slate-800">{activeProj?.projectType}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="font-semibold text-slate-400">Portfolio health score</span>
-                  <span className="font-bold text-slate-800 text-right">{projectScore}%</span>
-                </div>
+                {isComplianceModuleOn ? (
+                  <div className="flex justify-between">
+                    <span className="font-semibold text-slate-400">Portfolio health score</span>
+                    <span className="font-bold text-slate-800 text-right">{projectScore}%</span>
+                  </div>
+                ) : (
+                  <div className="flex justify-between">
+                    <span className="font-semibold text-slate-400">Total documents</span>
+                    <span className="font-bold text-slate-800 text-right">{projDocs.length} files</span>
+                  </div>
+                )}
               </div>
 
               {/* RERA and PMC specifics */}
-              <div className="bg-slate-50 p-3 rounded-lg border border-slate-100 text-xs">
-                <h4 className="font-semibold text-slate-700 font-sans mb-1 uppercase tracking-tight text-[10px]">PMC Compliance targets</h4>
-                <p className="text-slate-500 text-[11px]">All submissions must be certified under structural guidelines. Land title registrations are validated offline by legal counsel.</p>
-              </div>
+              {isComplianceModuleOn ? (
+                <div className="bg-slate-50 p-3 rounded-lg border border-slate-100 text-xs">
+                  <h4 className="font-semibold text-slate-700 font-sans mb-1 uppercase tracking-tight text-[10px]">PMC Compliance targets</h4>
+                  <p className="text-slate-500 text-[11px]">All submissions must be certified under structural guidelines. Land title registrations are validated offline by legal counsel.</p>
+                </div>
+              ) : (
+                <div className="bg-slate-50 p-3 rounded-lg border border-slate-100 text-xs">
+                  <h4 className="font-semibold text-slate-700 font-sans mb-1 uppercase tracking-tight text-[10px]">Document Library</h4>
+                  <p className="text-slate-500 text-[11px]">All document versions are archived securely. Use the site vault tab to upload and track PDFs or drawings.</p>
+                </div>
+              )}
             </div>
 
             {/* Right Submenus navigation area */}
@@ -393,7 +416,7 @@ export default function ProjectsView({
                 {[
                   { id: 'overview', label: 'Property Summary' },
                   { id: 'documents', label: 'Site S3 vault' },
-                  { id: 'compliance', label: 'Municipal compliance checklist' },
+                  ...(isComplianceModuleOn ? [{ id: 'compliance', label: 'Municipal compliance checklist' }] : []),
                   { id: 'team', label: 'Active Personnel Desk' }
                 ].map(tab => (
                   <button
@@ -429,23 +452,25 @@ export default function ProjectsView({
                       </div>
                     </div>
 
-                    <div className="space-y-2 pt-2 border-t border-slate-50">
-                      <span className="font-semibold text-slate-700 text-[11px] block">Clearance Health Ratios</span>
-                      <div className="flex gap-1">
-                        <div className="flex-1 bg-emerald-50 border border-emerald-100 p-2 text-center rounded-lg">
-                          <span className="text-[10px] text-slate-400 block font-semibold">Approved Certs</span>
-                          <span className="text-sm font-bold text-emerald-700">{projCompliance.filter(c => c.status === 'Approved').length}</span>
-                        </div>
-                        <div className="flex-1 bg-amber-55 bg-amber-50/40 border border-amber-100 p-2 text-center rounded-lg">
-                          <span className="text-[10px] text-slate-400 block font-semibold">Awaiting Verification</span>
-                          <span className="text-sm font-bold text-amber-700">{projCompliance.filter(c => c.status === 'Submitted' || c.status === 'Pending').length}</span>
-                        </div>
-                        <div className="flex-1 bg-rose-50 border border-rose-100 p-2 text-center rounded-lg">
-                          <span className="text-[10px] text-slate-400 block font-semibold">Hazards</span>
-                          <span className="text-sm font-bold text-rose-700">{projCompliance.filter(c => c.status === 'Expired' || c.status === 'Rejected').length}</span>
+                    {isComplianceModuleOn && (
+                      <div className="space-y-2 pt-2 border-t border-slate-50">
+                        <span className="font-semibold text-slate-700 text-[11px] block">Clearance Health Ratios</span>
+                        <div className="flex gap-1">
+                          <div className="flex-1 bg-emerald-50 border border-emerald-100 p-2 text-center rounded-lg">
+                            <span className="text-[10px] text-slate-400 block font-semibold">Approved Certs</span>
+                            <span className="text-sm font-bold text-emerald-700">{projCompliance.filter(c => c.status === 'Approved').length}</span>
+                          </div>
+                          <div className="flex-1 bg-amber-50/40 border border-amber-100 p-2 text-center rounded-lg">
+                            <span className="text-[10px] text-slate-400 block font-semibold">Awaiting Verification</span>
+                            <span className="text-sm font-bold text-amber-700">{projCompliance.filter(c => c.status === 'Submitted' || c.status === 'Pending').length}</span>
+                          </div>
+                          <div className="flex-1 bg-rose-50 border border-rose-100 p-2 text-center rounded-lg">
+                            <span className="text-[10px] text-slate-400 block font-semibold">Hazards</span>
+                            <span className="text-sm font-bold text-rose-700">{projCompliance.filter(c => c.status === 'Expired' || c.status === 'Rejected').length}</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 )}
 
