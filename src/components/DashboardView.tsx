@@ -233,7 +233,7 @@ export default function DashboardView({
               <div className="flex justify-between items-center pb-3 border-b border-slate-100 dark:border-slate-800">
                 <div>
                   <h4 className="text-sm font-extrabold text-slate-900 dark:text-white font-sans tracking-tight">Active Properties Portfolio Status</h4>
-                  <p className="text-xs text-slate-400 dark:text-slate-505 font-medium mt-0.5">Clearance rates across active properties</p>
+                  <p className="text-xs text-slate-400 dark:text-slate-505 font-medium mt-0.5">File metrics across active properties</p>
                 </div>
                 <button 
                   onClick={() => onNavigate('projects')}

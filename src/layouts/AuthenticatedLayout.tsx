@@ -118,7 +118,7 @@ export default function AuthenticatedLayout() {
       workspace.push({ id: 'approvals', label: 'Approvals', path: '/approvals', icon: CheckSquare, badge: pendingApprovalsCount });
     }
     if ((isModuleAllowed('dashboard') || isModuleAllowed('projects')) && role !== 'Site Engineer') {
-      workspace.push({ id: 'reports', label: 'Reports', path: '/reports', icon: BarChart3 });
+      workspace.push({ id: 'reports', label: 'Document Analytics', path: '/reports', icon: BarChart3 });
     }
 
     const manage: NavItem[] = [];
