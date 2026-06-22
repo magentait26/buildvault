@@ -461,7 +461,7 @@ export default function ProjectsView({
                             <span className="text-sm font-bold text-emerald-700">{projCompliance.filter(c => c.status === 'Approved').length}</span>
                           </div>
                           <div className="flex-1 bg-amber-50/40 border border-amber-100 p-2 text-center rounded-lg">
-                            <span className="text-[10px] text-slate-400 block font-semibold">Awaiting Verification</span>
+                            <span className="text-[10px] text-slate-400 block font-semibold">Draft Documents</span>
                             <span className="text-sm font-bold text-amber-700">{projCompliance.filter(c => c.status === 'Submitted' || c.status === 'Pending').length}</span>
                           </div>
                           <div className="flex-1 bg-rose-50 border border-rose-100 p-2 text-center rounded-lg">

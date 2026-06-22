@@ -101,6 +101,9 @@ export default function AuthenticatedLayout() {
       return isConfigEnabled && isRoleGranted;
     };
 
+    const approval_module_enabled = settings?.subscription?.enabledModules?.includes('approvals') ?? false;
+    const compliance_module_enabled = settings?.subscription?.enabledModules?.includes('compliance') ?? false;
+
     const workspace: NavItem[] = [];
     if (isModuleAllowed('dashboard')) {
       workspace.push({ id: 'dashboard', label: 'Dashboard', path: '/dashboard', icon: LayoutGrid });
@@ -111,10 +114,10 @@ export default function AuthenticatedLayout() {
     if (isModuleAllowed('documents')) {
       workspace.push({ id: 'documents', label: 'Documents', path: '/documents', icon: FileText });
     }
-    if (isModuleAllowed('compliance') && role !== 'Site Engineer') {
+    if (compliance_module_enabled === true && isModuleAllowed('compliance') && role !== 'Site Engineer') {
       workspace.push({ id: 'compliance', label: 'Compliance', path: '/compliance', icon: ShieldCheck });
     }
-    if (isModuleAllowed('approvals') && role !== 'Site Engineer') {
+    if (approval_module_enabled === true && isModuleAllowed('approvals') && role !== 'Site Engineer') {
       workspace.push({ id: 'approvals', label: 'Approvals', path: '/approvals', icon: CheckSquare, badge: pendingApprovalsCount });
     }
     if ((isModuleAllowed('dashboard') || isModuleAllowed('projects')) && role !== 'Site Engineer') {
