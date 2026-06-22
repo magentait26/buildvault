@@ -342,9 +342,68 @@ export class ApiClient {
     });
   }
 
+  static async uploadDocumentVersion(docId: string, file: File): Promise<any> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.request(`/documents/${docId}/versions`, {
+      method: 'POST',
+      body: formData,
+    });
+  }
+
   static async getVersions(): Promise<DocumentVersion[]> {
     // Return empty list or fetch from endpoints
     return [];
+  }
+
+  static async getDocumentVersions(docId: string): Promise<DocumentVersion[]> {
+    try {
+      const res = await this.request<{ success: boolean; versions?: any }>(`/documents/${docId}/versions`);
+      const list = Array.isArray(res.versions) ? res.versions : (res.versions?.data || []);
+      return list.map((v: any) => ({
+        id: v.id,
+        documentId: docId,
+        versionNumber: v.version_number,
+        fileName: v.file_name,
+        fileSize: v.file_size_bytes ? `${(v.file_size_bytes / 1024 / 1024).toFixed(2)} MB` : '0.10 MB',
+        uploadDate: v.created_at?.split('T')[0] || new Date().toISOString().substring(0, 10),
+        uploadedBy: v.publisher?.name || 'Staff',
+        comment: v.comment,
+      }));
+    } catch (e) {
+      return [];
+    }
+  }
+
+  static async archiveDocument(id: string): Promise<any> {
+    return this.request(`/documents/${id}/archive`, {
+      method: 'PATCH',
+    });
+  }
+
+  static async restoreDocument(id: string): Promise<any> {
+    return this.request(`/documents/${id}/restore`, {
+      method: 'PATCH',
+    });
+  }
+
+  static async deleteDocument(id: string): Promise<any> {
+    return this.request(`/documents/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  static async updateDocumentMetadata(id: string, payload: { name: string; category: string }): Promise<any> {
+    return this.request(`/documents/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        title: payload.name,
+        category: payload.category,
+      }),
+    });
   }
 
   // --- Compliance ---

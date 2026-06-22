@@ -207,4 +207,107 @@ class DocumentController extends Controller
             ]
         ]);
     }
+
+    /**
+     * Update metadata for a document
+     */
+    public function update(Request $request, string $id): JsonResponse
+    {
+        $document = Document::find($id);
+        if (!$document) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Document not found.'
+            ], 404);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'title' => 'required|string|max:255',
+            'category' => 'required|string|max:100',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $document->update([
+            'title' => $request->input('title'),
+            'category' => $request->input('category'),
+            'expiry_date' => $request->input('expiry_date'),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Document metadata updated successfully.',
+            'document' => $document->load('latestVersion')
+        ]);
+    }
+
+    /**
+     * Archive a document
+     */
+    public function archive(Request $request, string $id): JsonResponse
+    {
+        $document = Document::find($id);
+        if (!$document) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Document not found.'
+            ], 404);
+        }
+
+        $document->update(['status' => 'Archived']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Document successfully archived.',
+            'document' => $document->load('latestVersion')
+        ]);
+    }
+
+    /**
+     * Restore a document
+     */
+    public function restore(Request $request, string $id): JsonResponse
+    {
+        $document = Document::find($id);
+        if (!$document) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Document not found.'
+            ], 404);
+        }
+
+        $document->update(['status' => 'Active']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Document successfully restored.',
+            'document' => $document->load('latestVersion')
+        ]);
+    }
+
+    /**
+     * Soft delete a document
+     */
+    public function destroy(Request $request, string $id): JsonResponse
+    {
+        $document = Document::find($id);
+        if (!$document) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Document not found.'
+            ], 404);
+        }
+
+        $document->delete(); // Eloquent SoftDeletes handles this
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Document successfully soft-deleted.'
+        ]);
+    }
 }

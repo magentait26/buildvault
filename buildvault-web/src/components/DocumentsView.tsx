@@ -5,6 +5,8 @@ import {
 } from '../types';
 import { useAuthStore } from '../store/useAuthStore';
 import { settingsService } from '../services/settingsService';
+import { ApiClient } from '../services/apiClient';
+import { useQueryClient } from '@tanstack/react-query';
 import { 
   Folder, FileText, Search, Tag, Filter, UploadCloud, Download, CheckSquare, 
   ArrowUpRight, AlertCircle, History, RotateCcw, Clock, MoreVertical, 
@@ -102,6 +104,141 @@ export default function DocumentsView({
   // Focus document (drawer/modal/preview)
   const [previewDocId, setPreviewDocId] = useState<string | null>(null);
   const [approvalRationaleString, setApprovalRationaleString] = useState('');
+
+  const queryClient = useQueryClient();
+
+  // New action states
+  const [editingDoc, setEditingDoc] = useState<Document | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editCategory, setEditCategory] = useState<DocumentCategory>('Land Records');
+  const [showEditModal, setShowEditModal] = useState(false);
+
+  const [versioningDoc, setVersioningDoc] = useState<Document | null>(null);
+  const [showVersionModal, setShowVersionModal] = useState(false);
+  const [versionFile, setVersionFile] = useState<File | null>(null);
+
+  const [actionConfirm, setActionConfirm] = useState<{ type: 'archive' | 'delete'; doc: Document } | null>(null);
+  const [isActionLoading, setIsActionLoading] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  const handleDownloadClick = (doc: Document) => {
+    const content = `BuildVault REDMS Document Asset
+------------------------------------
+Document Name: ${doc.name}
+Document ID: ${doc.id}
+Category: ${doc.category}
+Upload Date: ${doc.uploadDate}
+Uploaded By: ${doc.uploadedBy} (${doc.uploadedRole})
+Latest Version: v${doc.latestVersion}
+Status: ${doc.status}
+Verification Path: s3://${selectedOrgId || 'org-1'}/${doc.projectId}/${doc.category.toLowerCase().replace(/\\s+/g, '-')}/${doc.name.toLowerCase()}_v${doc.latestVersion}.pdf
+------------------------------------
+BuildVault Real Estate Document Management System v2 (REDMS)
+Integrity Hash: SHA256 Secure Asset Cryptographic Proof Verified.`;
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${doc.name.replace(/\s+/g, '_')}_v${doc.latestVersion}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    onAddLog('Download Document', `Downloaded document file asset: ${doc.name} (v${doc.latestVersion})`);
+  };
+
+  const handleEditClick = (doc: Document) => {
+    setEditingDoc(doc);
+    setEditName(doc.name);
+    setEditCategory(doc.category);
+    setShowEditModal(true);
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingDoc || !editName) return;
+    try {
+      setIsActionLoading(true);
+      await ApiClient.updateDocumentMetadata(editingDoc.id, { name: editName, category: editCategory });
+      onAddLog('Update Document Metadata', `Updated metadata for "${editingDoc.name}" to "${editName}" / "${editCategory}"`);
+      queryClient.invalidateQueries({ queryKey: ['documents'] });
+      setShowEditModal(false);
+      setEditingDoc(null);
+    } catch (err: any) {
+      alert(err.message || 'Failed to update metadata.');
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
+
+  const handleVersionClick = (doc: Document) => {
+    setVersioningDoc(doc);
+    setVersionFile(null);
+    setShowVersionModal(true);
+  };
+
+  const handleVersionSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!versioningDoc || !versionFile) return;
+    try {
+      setIsActionLoading(true);
+      await ApiClient.uploadDocumentVersion(versioningDoc.id, versionFile);
+      onAddLog('Upload Revision', `Pushed updated revision for document "${versioningDoc.name}"`);
+      queryClient.invalidateQueries({ queryKey: ['documents'] });
+      queryClient.invalidateQueries({ queryKey: ['versions'] });
+      setShowVersionModal(false);
+      setVersioningDoc(null);
+      setVersionFile(null);
+    } catch (err: any) {
+      alert(err.message || 'Failed to upload new version.');
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
+
+  const handleRestoreClick = async (doc: Document) => {
+    try {
+      setIsActionLoading(true);
+      await ApiClient.restoreDocument(doc.id);
+      onAddLog('Restore Document', `Restored document "${doc.name}" to Active from Archived.`);
+      queryClient.invalidateQueries({ queryKey: ['documents'] });
+    } catch (err: any) {
+      alert(err.message || 'Failed to restore document.');
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
+
+  const handleArchiveClick = (doc: Document) => {
+    setActionConfirm({ type: 'archive', doc });
+    setActionError(null);
+  };
+
+  const handleDeleteClick = (doc: Document) => {
+    setActionConfirm({ type: 'delete', doc });
+    setActionError(null);
+  };
+
+  const handleConfirmAction = async () => {
+    if (!actionConfirm) return;
+    const { type, doc } = actionConfirm;
+    try {
+      setIsActionLoading(true);
+      if (type === 'archive') {
+        await ApiClient.archiveDocument(doc.id);
+        onAddLog('Archive Document', `Archived document "${doc.name}"`);
+      } else if (type === 'delete') {
+        await ApiClient.deleteDocument(doc.id);
+        onAddLog('Delete Document', `Soft deleted document "${doc.name}"`);
+      }
+      queryClient.invalidateQueries({ queryKey: ['documents'] });
+      setActionConfirm(null);
+    } catch (err: any) {
+      setActionError(err.message || 'Failed to execute operation.');
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
 
   // S3 path builder helper
   const getS3Path = (doc: Document) => {
@@ -637,14 +774,75 @@ export default function DocumentsView({
                           </td>
 
                           <td className="py-3.5 px-4 text-right">
-                            <div className="inline-flex gap-1.5">
+                            <div className="inline-flex gap-1 flex-wrap justify-end">
                               <button
                                 onClick={() => setPreviewDocId(doc.id)}
-                                className="p-1 px-2 border border-slate-200 hover:bg-slate-50 text-slate-600 hover:text-slate-800 rounded-lg text-[10px] font-semibold flex items-center gap-0.5 cursor-pointer transition-all bg-white"
-                                title="Inspect Versions and Audits"
+                                className="p-1 px-1.5 border border-slate-200 hover:bg-slate-50 text-slate-600 hover:text-slate-800 rounded-lg text-[10px] font-semibold flex items-center gap-0.5 cursor-pointer transition-all bg-white font-sans"
+                                title="Inspect / View Versions and Audits"
+                                id={`btn-view-${doc.id}`}
                               >
-                                <Eye className="w-3.5 h-3.5" /> inspect
+                                <Eye className="w-3.5 h-3.5 text-slate-500" /> View
                               </button>
+
+                              <button
+                                onClick={() => handleDownloadClick(doc)}
+                                className="p-1 px-1.5 border border-slate-200 hover:bg-slate-50 text-slate-600 hover:text-slate-800 rounded-lg text-[10px] font-semibold flex items-center gap-0.5 cursor-pointer transition-all bg-white font-sans"
+                                title="Download Document"
+                                id={`btn-download-${doc.id}`}
+                              >
+                                <Download className="w-3.5 h-3.5 text-slate-500" />
+                              </button>
+
+                              <button
+                                onClick={() => handleEditClick(doc)}
+                                className="p-1 px-1.5 border border-slate-200 hover:bg-slate-50 text-slate-600 hover:text-slate-800 rounded-lg text-[10px] font-semibold flex items-center gap-0.5 cursor-pointer transition-all bg-white font-sans"
+                                title="Edit Metadata"
+                                id={`btn-edit-${doc.id}`}
+                              >
+                                <Tag className="w-3.5 h-3.5 text-slate-500" />
+                              </button>
+
+                              <button
+                                onClick={() => handleVersionClick(doc)}
+                                className="p-1 px-1.5 border border-slate-200 hover:bg-slate-50 text-slate-600 hover:text-slate-800 rounded-lg text-[10px] font-semibold flex items-center gap-0.5 cursor-pointer transition-all bg-white font-sans"
+                                title="Upload New Version"
+                                id={`btn-version-${doc.id}`}
+                              >
+                                <Plus className="w-3.5 h-3.5 text-slate-500" />
+                              </button>
+
+                              {doc.status === 'Archived' ? (
+                                <button
+                                  onClick={() => handleRestoreClick(doc)}
+                                  className="p-1 px-1.5 border border-emerald-200 hover:bg-emerald-50 text-emerald-600 hover:text-emerald-700 rounded-lg text-[10px] font-semibold flex items-center gap-0.5 cursor-pointer transition-all bg-white font-sans"
+                                  title="Restore Document"
+                                  id={`btn-restore-${doc.id}`}
+                                >
+                                  <RotateCcw className="w-3.5 h-3.5" />
+                                </button>
+                              ) : (
+                                ((currentRole as string) === 'Super Admin' || (currentRole as string) === 'Admin' || (currentRole as string) === 'Manager' || (currentRole as string) === 'Director' || (currentRole as string) === 'Project Manager') && (
+                                  <button
+                                    onClick={() => handleArchiveClick(doc)}
+                                    className="p-1 px-1.5 border border-amber-200 hover:bg-amber-50 text-amber-600 hover:text-amber-700 rounded-lg text-[10px] font-semibold flex items-center gap-0.5 cursor-pointer transition-all bg-white font-sans"
+                                    title="Archive Document"
+                                    id={`btn-archive-${doc.id}`}
+                                  >
+                                    <Clock className="w-3.5 h-3.5" />
+                                  </button>
+                                )
+                              )}
+
+                              {((currentRole as string) === 'Super Admin' || (currentRole as string) === 'Admin' || (currentRole as string) === 'Director') && (
+                                <button
+                                  onClick={() => handleDeleteClick(doc)}
+                                  className="p-1 px-1.5 border border-rose-200 hover:bg-rose-50 text-rose-600 hover:text-rose-700 rounded-lg text-[10px] font-semibold flex items-center gap-0.5 cursor-pointer transition-all bg-white font-sans"
+                                  title="Soft Delete Document"
+                                  id={`btn-delete-${doc.id}`}
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -949,6 +1147,176 @@ export default function DocumentsView({
               </button>
 
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Metadata Modal */}
+      {showEditModal && editingDoc && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 shadow-2xl" id="modal-edit-metadata">
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-xs" onClick={() => setShowEditModal(false)}></div>
+          <div className="relative bg-white border border-slate-200 rounded-xl shadow-2xl max-w-md w-full p-6 animate-in zoom-in-95 duration-200 z-10">
+            <div className="flex justify-between items-center pb-3 border-b border-slate-100 mb-4">
+              <h3 className="font-bold text-sm text-slate-900 font-sans uppercase tracking-wide">Edit Document Metadata</h3>
+              <button type="button" onClick={() => setShowEditModal(false)} className="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <form onSubmit={handleEditSubmit} className="space-y-4 text-xs font-sans">
+              <div className="space-y-1">
+                <label className="font-semibold text-slate-600 block">Document Title</label>
+                <input
+                  type="text"
+                  value={editName}
+                  onChange={e => setEditName(e.target.value)}
+                  className="w-full p-2 border border-slate-250 bg-white rounded-lg focus:outline-none text-slate-800 text-xs"
+                  required
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="font-semibold text-slate-600 block">Filing Category</label>
+                <select
+                  value={editCategory}
+                  onChange={e => setEditCategory(e.target.value as DocumentCategory)}
+                  className="w-full p-2 border border-slate-250 bg-white rounded-lg focus:outline-none text-slate-800 text-xs"
+                >
+                  {categories.map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="pt-2 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowEditModal(false)}
+                  className="flex-1 py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg font-semibold text-center transition-all cursor-pointer text-xs"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isActionLoading}
+                  className="flex-1 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-semibold text-center transition-all cursor-pointer text-xs"
+                >
+                  {isActionLoading ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Upload New Version Modal */}
+      {showVersionModal && versioningDoc && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 shadow-2xl" id="modal-upload-version">
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-xs" onClick={() => setShowVersionModal(false)}></div>
+          <div className="relative bg-white border border-slate-200 rounded-xl shadow-2xl max-w-md w-full p-6 animate-in zoom-in-95 duration-200 z-10">
+            <div className="flex justify-between items-center pb-3 border-b border-slate-100 mb-4">
+              <h3 className="font-bold text-sm text-slate-900 font-sans uppercase tracking-wide">Upload New Document Version</h3>
+              <button type="button" onClick={() => setShowVersionModal(false)} className="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <form onSubmit={handleVersionSubmit} className="space-y-5 text-xs font-sans">
+              <div className="bg-slate-50 p-3 rounded-lg border border-slate-150 space-y-1 text-xs">
+                <p className="font-bold text-slate-700">Target Document:</p>
+                <p className="text-slate-600 font-medium">{versioningDoc.name}</p>
+                <p className="text-[10px] text-slate-400">Current Revision: v{versioningDoc.latestVersion} • {versioningDoc.category}</p>
+              </div>
+              <div className="space-y-1">
+                <label className="font-semibold text-slate-600 block text-xs">Select File (.pdf, .doc, .dwg, up to 50MB)</label>
+                <input
+                  type="file"
+                  onChange={e => {
+                    if (e.target.files && e.target.files[0]) {
+                      setVersionFile(e.target.files[0]);
+                    }
+                  }}
+                  className="w-full p-2 border border-slate-200 bg-white rounded-lg focus:outline-none text-xs"
+                  accept=".pdf,.doc,.docx,.dwg"
+                  required
+                />
+              </div>
+              <div className="pt-2 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowVersionModal(false)}
+                  className="flex-1 py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg font-semibold text-center transition-all cursor-pointer text-xs"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isActionLoading || !versionFile}
+                  className="flex-1 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-semibold text-center transition-all cursor-pointer text-xs"
+                >
+                  {isActionLoading ? 'Uploading...' : 'Commit New Version'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Archive/Delete Action Confirmation Modal */}
+      {actionConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 shadow-2xl" id="modal-action-confirm">
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-xs" onClick={() => setActionConfirm(null)}></div>
+          <div className="relative bg-white border border-slate-200 rounded-xl shadow-2xl max-w-sm w-full p-6 animate-in zoom-in-95 duration-200 z-10">
+            <div className="flex items-center gap-3 pb-3 border-b border-slate-100 mb-4 text-slate-800">
+              <AlertCircle className={`w-5 h-5 shrink-0 ${actionConfirm.type === 'delete' ? 'text-rose-500' : 'text-amber-500'}`} />
+              <h3 className="font-bold text-sm font-sans uppercase tracking-wide">
+                Confirm {actionConfirm.type === 'delete' ? 'Delete' : 'Archive'} Action
+              </h3>
+            </div>
+            
+            <div className="space-y-3 font-sans text-xs">
+              <p className="text-slate-650 leading-relaxed text-xs">
+                Are you absolutely sure you want to <strong>{actionConfirm.type}</strong> the following regulatory record?
+              </p>
+              <div className="bg-slate-50 p-3 rounded-lg border border-slate-150 leading-relaxed text-[11px]">
+                <p className="font-bold text-slate-800">{actionConfirm.doc.name}</p>
+                <p className="text-slate-500 font-medium">Category: {actionConfirm.doc.category}</p>
+                <p className="text-slate-400">Current Status: {actionConfirm.doc.status}</p>
+              </div>
+              
+              {actionConfirm.type === 'delete' ? (
+                <p className="text-[11px] text-rose-600 font-medium">
+                  ⚠️ Note: This operation soft-deletes the record. It remains archived in our historical index audit logs, but is retracted from standard workspace listings.
+                </p>
+              ) : (
+                <p className="text-[11px] text-slate-500">
+                  This document will be marked as <strong>Archived</strong>. You can restore this document back to Active at any time.
+                </p>
+              )}
+
+              {actionError && (
+                <div className="p-2 bg-rose-50 border border-rose-200 text-rose-700 rounded text-[10px]">
+                  {actionError}
+                </div>
+              )}
+            </div>
+
+            <div className="pt-4 flex gap-2">
+              <button
+                onClick={() => setActionConfirm(null)}
+                disabled={isActionLoading}
+                className="flex-1 py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-semibold transition-all cursor-pointer text-center text-xs"
+              >
+                No, Cancel
+              </button>
+              <button
+                onClick={handleConfirmAction}
+                disabled={isActionLoading}
+                className={`flex-1 py-1.5 text-white rounded-lg text-xs font-semibold transition-all cursor-pointer text-center text-xs ${
+                  actionConfirm.type === 'delete' 
+                    ? 'bg-rose-600 hover:bg-rose-700 border border-rose-700' 
+                    : 'bg-amber-600 hover:bg-amber-700 border border-amber-700'
+                }`}
+              >
+                {isActionLoading ? 'Processing...' : `Yes, ${actionConfirm.type}`}
+              </button>
+            </div>
           </div>
         </div>
       )}

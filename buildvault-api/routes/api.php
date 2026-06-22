@@ -57,7 +57,11 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::prefix('v1/documents')->group(function () {
         Route::get('/', [DocumentController::class, 'index'])->name('documents.index');
         Route::post('/', [DocumentController::class, 'store'])->name('documents.store');
+        Route::put('/{id}', [DocumentController::class, 'update'])->name('documents.update');
         Route::post('/{id}/approve', [DocumentController::class, 'approve'])->name('documents.approve');
+        Route::patch('/{id}/archive', [DocumentController::class, 'archive'])->name('documents.archive');
+        Route::patch('/{id}/restore', [DocumentController::class, 'restore'])->name('documents.restore');
+        Route::delete('/{id}', [DocumentController::class, 'destroy'])->name('documents.destroy');
         
         // Document versions history revisions
         Route::get('/{id}/versions', [DocumentVersionController::class, 'index'])->name('documents.versions.index');
