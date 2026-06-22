@@ -8,15 +8,27 @@ export type ProjectStatus = 'Planning' | 'Active' | 'On Hold' | 'Completed' | 'A
 
 export type DocumentCategory =
   | 'Land Records'
-  | 'Legal'
+  | 'Sale Deeds'
+  | 'Mother Deeds'
+  | 'RTC / Mutation'
+  | 'Khata / Property Tax'
   | 'RERA'
+  | 'Layout Approval'
+  | 'Building Plan Approval'
+  | 'NOCs'
+  | 'Agreements'
+  | 'Finance'
+  | 'Project Drawings'
+  | 'Site Photos'
+  | 'Customer Handover'
+  | 'Legal Cases'
+  | 'Other Documents'
   | 'Approvals'
+  | 'Legal'
   | 'Construction'
   | 'Environmental'
-  | 'Finance'
   | 'Contracts'
   | 'Sales'
-  | 'Customer Handover'
   | 'Litigation';
 
 export type DocumentStatus = 'Draft' | 'Active' | 'Archived' | 'Expired';

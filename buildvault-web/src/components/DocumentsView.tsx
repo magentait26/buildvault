@@ -34,8 +34,22 @@ interface DocumentsViewProps {
 }
 
 const CATEGORIES: DocumentCategory[] = [
-  'Land Records', 'Legal', 'RERA', 'Approvals', 'Construction', 
-  'Environmental', 'Finance', 'Contracts', 'Sales', 'Customer Handover', 'Litigation'
+  'Land Records',
+  'Sale Deeds',
+  'Mother Deeds',
+  'RTC / Mutation',
+  'Khata / Property Tax',
+  'RERA',
+  'Layout Approval',
+  'Building Plan Approval',
+  'NOCs',
+  'Agreements',
+  'Finance',
+  'Project Drawings',
+  'Site Photos',
+  'Customer Handover',
+  'Legal Cases',
+  'Other Documents'
 ];
 
 export default function DocumentsView({
@@ -52,10 +66,12 @@ export default function DocumentsView({
 }: DocumentsViewProps) {
   const { selectedOrgId } = useAuthStore();
   const settings = settingsService.getTenantSettings(selectedOrgId || 'org-1');
-  const categories = (settings?.projects?.documentCategories as DocumentCategory[]) || CATEGORIES;
-
   const isApprovalsModuleOn = settings?.subscription?.enabledModules?.includes('approvals') ?? false;
   const isComplianceModuleOn = settings?.subscription?.enabledModules?.includes('compliance') ?? false;
+
+  const categories = isApprovalsModuleOn 
+    ? [...CATEGORIES, 'Approvals' as DocumentCategory] 
+    : CATEGORIES;
 
   // Navigation & list controls
   const [selectedProjectId, setSelectedProjectId] = useState<string>('all');
@@ -68,7 +84,8 @@ export default function DocumentsView({
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploadProject, setUploadProject] = useState('');
   const [uploadName, setUploadName] = useState('');
-  const [uploadCategory, setUploadCategory] = useState<DocumentCategory>(categories[0] || 'Approvals');
+  const [uploadCategory, setUploadCategory] = useState<DocumentCategory>(categories[0] || 'Land Records');
+  const [uploadStatus, setUploadStatus] = useState<'Active' | 'Draft'>('Active');
   const [uploadTagsString, setUploadTagsString] = useState('');
   const [uploadDesc, setUploadDesc] = useState('');
   const [uploadComment, setUploadComment] = useState('');
@@ -121,7 +138,8 @@ export default function DocumentsView({
   const resetUploadForm = () => {
     setUploadProject(projects[0]?.id || '');
     setUploadName('');
-    setUploadCategory('Approvals');
+    setUploadCategory(categories[0] || 'Land Records');
+    setUploadStatus('Active');
     setUploadTagsString('');
     setUploadDesc('');
     setUploadComment('');
@@ -136,6 +154,18 @@ export default function DocumentsView({
   const handleUploadSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!uploadName || !uploadProject) return;
+
+    // Apply manual draft persistence if selected
+    if (uploadStatus === 'Draft') {
+      try {
+        const drafts = JSON.parse(localStorage.getItem('buildvault_manual_drafts') || '[]');
+        const cleanName = uploadName.replace(/\.[^/.]+$/, "");
+        if (!drafts.includes(cleanName)) {
+          drafts.push(cleanName);
+          localStorage.setItem('buildvault_manual_drafts', JSON.stringify(drafts));
+        }
+      } catch (err) {}
+    }
 
     // Build tags array
     const tags = uploadTagsString
@@ -231,11 +261,11 @@ export default function DocumentsView({
   const triggerBulkSample = () => {
     if (!projects[0]) return;
     const samples = [
-      { name: 'Environmental_Air_Quality_EIA', category: 'Environmental' as DocumentCategory, tags: ['EIA', 'CleanAir'] },
-      { name: 'State_RERA_Clearance_Authority', category: 'RERA' as DocumentCategory, tags: ['RERA', 'Registrar'] },
-      { name: 'Airport_Aviation_Survey_Grade', category: 'Approvals' as DocumentCategory, tags: ['NOC', 'GridHeight'] },
-      { name: 'Site_Soil_Hydrology_Foundation', category: 'Construction' as DocumentCategory, tags: ['CoreDrill', 'SiltTest'] },
-      { name: 'Master_Builder_SLA_Contracts', category: 'Contracts' as DocumentCategory, tags: ['Legal', 'PM'] }
+       { name: 'Environmental_Air_Quality_EIA', category: 'Land Records' as DocumentCategory, tags: ['EIA', 'CleanAir'] },
+       { name: 'State_RERA_Clearance_Authority', category: 'RERA' as DocumentCategory, tags: ['RERA', 'Registrar'] },
+       { name: 'Airport_Aviation_Survey_Grade', category: 'NOCs' as DocumentCategory, tags: ['NOC', 'GridHeight'] },
+       { name: 'Site_Soil_Hydrology_Foundation', category: 'Project Drawings' as DocumentCategory, tags: ['CoreDrill', 'SiltTest'] },
+       { name: 'Master_Builder_SLA_Contracts', category: 'Agreements' as DocumentCategory, tags: ['Legal', 'PM'] }
     ];
 
     const countToUpload = Math.min(bulkCount, samples.length);
@@ -457,10 +487,10 @@ export default function DocumentsView({
             <div className="flex border-t border-slate-100 pt-3 gap-1 overflow-x-auto text-[11px]">
               {[
                 { id: 'all', label: 'All Documents' },
-                { id: 'draft', label: 'Draft' },
                 { id: 'active', label: 'Active' },
+                { id: 'expired', label: 'Expired' },
                 { id: 'archived', label: 'Archived' },
-                { id: 'expired', label: 'Expired' }
+                { id: 'draft', label: 'Draft' }
               ].map(tab => (
                 <button
                   key={tab.id}
@@ -861,15 +891,27 @@ export default function DocumentsView({
                 </div>
 
                 <div className="space-y-1">
-                  <label className="font-semibold text-slate-60 block">Tags (comma split)</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Fire, NOC, B-Block"
-                    value={uploadTagsString}
-                    onChange={e => setUploadTagsString(e.target.value)}
+                  <label className="font-semibold text-slate-60 block">Filing Status</label>
+                  <select
+                    value={uploadStatus}
+                    onChange={e => setUploadStatus(e.target.value as 'Active' | 'Draft')}
                     className="w-full p-2 border border-slate-250 bg-white rounded-lg focus:outline-none"
-                  />
+                  >
+                    <option value="Active">Active</option>
+                    <option value="Draft">Draft</option>
+                  </select>
                 </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="font-semibold text-slate-60 block">Tags (comma split)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Fire, NOC, B-Block"
+                  value={uploadTagsString}
+                  onChange={e => setUploadTagsString(e.target.value)}
+                  className="w-full p-2 border border-slate-250 bg-white rounded-lg focus:outline-none"
+                />
               </div>
 
               <div className="space-y-1">

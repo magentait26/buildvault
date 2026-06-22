@@ -2,15 +2,57 @@ import {
   Project, Document, DocumentVersion, ComplianceRecord, 
   ApprovalTask, ActivityLog, User, Notification, Organization 
 } from '../types';
+import { useAuthStore } from '../store/useAuthStore';
+import { settingsService } from './settingsService';
 
-export const mapDocumentStatus = (backendStatus: string): 'Draft' | 'Active' | 'Archived' | 'Expired' => {
+export const mapDocumentStatus = (backendStatus: string, docId?: string, docName?: string): 'Draft' | 'Active' | 'Archived' | 'Expired' => {
   const status = (backendStatus || '').toLowerCase();
+  
+  let isApprovalsModuleOn = false;
+  try {
+    const selectedOrgId = useAuthStore.getState().selectedOrgId;
+    const settings = settingsService.getTenantSettings(selectedOrgId || 'org-1');
+    isApprovalsModuleOn = settings?.subscription?.enabledModules?.includes('approvals') ?? false;
+  } catch (e) {}
+
   if (status.includes('approve') || status.includes('clearance') || status.includes('granted') || status.includes('active')) {
     return 'Active';
   }
-  if (status.includes('await') || status.includes('pend') || status.includes('revis') || status.includes('draft')) {
-    return 'Draft';
+
+  // Check if manually saved as draft
+  let isManualDraft = false;
+  try {
+    const drafts = JSON.parse(localStorage.getItem('buildvault_manual_drafts') || '[]');
+    if (docName && drafts.includes(docName)) {
+      isManualDraft = true;
+    }
+    if (docId && drafts.includes(docId)) {
+      isManualDraft = true;
+    }
+  } catch(e) {}
+
+  if (!isApprovalsModuleOn) {
+    if (isManualDraft) {
+      return 'Draft';
+    }
+    // "Legacy statuses: Awaiting Approval, In Review, Pending Verification should map to Active by default, not Draft."
+    if (status.includes('await') || status.includes('pend') || status.includes('review') || status.includes('verif') || status.includes('in review')) {
+      return 'Active';
+    }
+    if (status.includes('draft')) {
+      // "New uploaded documents must default to Active."
+      return 'Active';
+    }
+  } else {
+    // approvals module is ON
+    if (status.includes('await') || status.includes('pend') || status.includes('review') || status.includes('verif') || status.includes('in review')) {
+      return 'Draft';
+    }
+    if (status.includes('draft')) {
+      return 'Draft';
+    }
   }
+
   if (status.includes('reject') || status.includes('archiv')) {
     return 'Archived';
   }
@@ -210,7 +252,7 @@ export class ApiClient {
       uploadedBy: d.latest_version?.publisher?.name || d.uploaded_by || 'Staff',
       uploadedRole: d.latest_version?.publisher?.role?.name || 'Site Engineer',
       latestVersion: d.latest_version?.version_number || d.latest_version || 1,
-      status: mapDocumentStatus(d.status || 'Pending'),
+      status: mapDocumentStatus(d.status || 'Pending', d.id, d.title),
       description: d.description || '',
     }));
   }
@@ -254,7 +296,7 @@ export class ApiClient {
       uploadedBy: d.latest_version?.publisher?.name || 'Staff',
       uploadedRole: 'Director',
       latestVersion: d.latest_version?.version_number || 1,
-      status: mapDocumentStatus(d.status || 'Pending'),
+      status: mapDocumentStatus(d.status || 'Pending', d.id, d.title),
       description: payload.comment || '',
     };
 

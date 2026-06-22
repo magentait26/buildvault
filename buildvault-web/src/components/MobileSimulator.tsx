@@ -31,8 +31,22 @@ interface MobileSimulatorProps {
 }
 
 const CATEGORIES: DocumentCategory[] = [
-  'Land Records', 'Legal', 'RERA', 'Approvals', 'Construction', 
-  'Environmental', 'Finance', 'Contracts', 'Sales', 'Customer Handover', 'Litigation'
+  'Land Records',
+  'Sale Deeds',
+  'Mother Deeds',
+  'RTC / Mutation',
+  'Khata / Property Tax',
+  'RERA',
+  'Layout Approval',
+  'Building Plan Approval',
+  'NOCs',
+  'Agreements',
+  'Finance',
+  'Project Drawings',
+  'Site Photos',
+  'Customer Handover',
+  'Legal Cases',
+  'Other Documents'
 ];
 
 export default function MobileSimulator({
@@ -47,7 +61,10 @@ export default function MobileSimulator({
 }: MobileSimulatorProps) {
   const { selectedOrgId } = useAuthStore();
   const settings = settingsService.getTenantSettings(selectedOrgId || 'org-1');
-  const categories = (settings?.projects?.documentCategories as DocumentCategory[]) || CATEGORIES;
+  const isApprovalsModuleOn = settings?.subscription?.enabledModules?.includes('approvals') ?? false;
+  const categories = isApprovalsModuleOn 
+    ? [...CATEGORIES, 'Approvals' as DocumentCategory] 
+    : CATEGORIES;
 
   // Simulator State Machine
   const [isLoggedIn, setIsLoggedIn] = useState(false);

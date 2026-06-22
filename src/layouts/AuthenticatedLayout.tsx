@@ -485,7 +485,7 @@ export default function AuthenticatedLayout() {
       <footer id="system-footer" className="bg-white border-t border-slate-100 py-3 px-4 sm:px-6 relative shrink-0">
         <div className="max-w-[1400px] mx-auto flex flex-col md:flex-row items-center justify-between gap-2.5">
           <p className="text-[10px] text-slate-400 font-medium">
-            BuildVault Portfolio Compliance Ledger System • Dual S3 Immutability Checked • <a href="https://www.magentait.com" target="_blank" rel="noopener noreferrer" className="hover:underline font-bold text-[#115e59] dark:text-emerald-400">Powered by Magenta IT Solutions Pvt Ltd.</a>
+            BuildVault Real Estate Document Management System • Dual S3 Immutability Checked • <a href="https://www.magentait.com" target="_blank" rel="noopener noreferrer" className="hover:underline font-bold text-[#115e59] dark:text-emerald-400">Powered by Magenta IT Solutions Pvt Ltd.</a>
           </p>
           <div className="flex items-center gap-4 text-[10px] font-semibold text-slate-400">
             <span>TLS 1.3 Encryption Active</span>
