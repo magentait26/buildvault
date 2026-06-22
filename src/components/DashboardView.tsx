@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Project, Document, ComplianceRecord, ApprovalTask, ActivityLog, Role, User } from '../types';
+import { settingsService } from '../services/settingsService';
+import { useAuthStore } from '../store/useAuthStore';
 import { 
   Building2, FileText, CheckSquare, ShieldAlert, TrendingUp, 
   Calendar, AlertTriangle, ArrowRight, UserCheck, ShieldCheck, 
@@ -38,6 +40,12 @@ export default function DashboardView({
   allTenantUsers = [],
   onResetDatabase
 }: DashboardProps) {
+  const selectedOrgId = useAuthStore((state) => state.selectedOrgId);
+  const settings = settingsService.getTenantSettings(selectedOrgId || 'org-1');
+  const enabledModules = settings?.subscription?.enabledModules || [];
+  const isApprovalsModuleOn = enabledModules.includes('approvals');
+  const isComplianceModuleOn = enabledModules.includes('compliance');
+
   // Toggle for Right Activity Rail
   const [isActivityRailExpanded, setIsActivityRailExpanded] = useState(true);
 
@@ -117,95 +125,111 @@ export default function DashboardView({
           </div>
 
           {/* Modern Standalone KPI Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-            
-            {/* Metric 1: Active Projects */}
-            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs hover:border-slate-350 dark:hover:border-slate-700 transition-all">
-              <div className="flex justify-between items-start">
-                <div className="space-y-1">
-                  <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider font-sans">Active Projects</p>
-                  <h3 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">{activeProjects}</h3>
-                  <p className="text-[10px] inline-flex items-center gap-1 font-semibold text-slate-400 dark:text-slate-500 font-sans mt-0.5">
-                    Out of {totalProjects} total
-                  </p>
-                </div>
-                <div className="bg-slate-100 dark:bg-slate-800 p-2 text-[#115e59] rounded-xl border border-slate-200 dark:border-slate-700/50">
-                  <Building2 className="w-4.5 h-4.5" />
-                </div>
-              </div>
-            </div>
+          {(() => {
+            const visibleCardsCount = 3 + (isApprovalsModuleOn ? 1 : 0) + (isComplianceModuleOn ? 1 : 0);
+            const gridColsClass = 
+              visibleCardsCount === 3 
+                ? 'lg:grid-cols-3' 
+                : visibleCardsCount === 4 
+                  ? 'lg:grid-cols-4' 
+                  : 'lg:grid-cols-5';
 
-            {/* Metric 2: Documents */}
-            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs hover:border-slate-350 dark:hover:border-slate-700 transition-all">
-              <div className="flex justify-between items-start">
-                <div className="space-y-1">
-                  <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider font-sans">Documents</p>
-                  <h3 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">{totalDocs}</h3>
-                  <p className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold font-sans uppercase tracking-wider mt-0.5">Secure Vault Storage</p>
-                </div>
-                <div className="bg-slate-100 dark:bg-slate-800 p-2 text-slate-500 dark:text-slate-400 rounded-xl border border-slate-200 dark:border-slate-700/50">
-                  <FileText className="w-4.5 h-4.5" />
-                </div>
-              </div>
-            </div>
-
-            {/* Metric 3: Pending Approvals */}
-            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs hover:border-slate-350 dark:hover:border-slate-700 transition-all">
-              <div className="flex justify-between items-start">
-                <div className="space-y-1">
-                  <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider font-sans">Pending Approvals</p>
-                  <h3 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">{pendingApprovals}</h3>
-                  <p className={`text-[10px] font-bold font-sans mt-0.5 ${pendingApprovals > 0 ? 'text-amber-600 dark:text-[#F59E0B]' : 'text-slate-405 dark:text-slate-400'}`}>
-                    {pendingApprovals > 0 ? 'Awaiting verification' : 'All clear'}
-                  </p>
-                </div>
-                <div className="bg-slate-100 dark:bg-slate-800 p-2 text-[#eab308] rounded-xl border border-slate-200 dark:border-slate-700/50">
-                  <CheckSquare className="w-4.5 h-4.5" />
-                </div>
-              </div>
-            </div>
-
-            {/* Metric 4: Compliance Score */}
-            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs hover:border-slate-350 dark:hover:border-slate-700 transition-all">
-              <div className="flex justify-between items-start">
-                <div className="space-y-1">
-                  <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider font-sans">Compliance Score</p>
-                  <h3 className="text-3xl font-black text-slate-909 dark:text-white tracking-tight">{complianceScore}%</h3>
-                  <div className="w-18 bg-slate-100 dark:bg-slate-800 h-1 mt-1 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full transition-all duration-500 bg-[#7C3AED]"
-                      style={{ width: `${complianceScore}%` }}
-                    ></div>
+            return (
+              <div className={`grid grid-cols-1 sm:grid-cols-2 ${gridColsClass} gap-4`}>
+                
+                {/* Metric 1: Active Projects */}
+                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs hover:border-slate-350 dark:hover:border-slate-700 transition-all">
+                  <div className="flex justify-between items-start">
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider font-sans">Active Projects</p>
+                      <h3 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">{activeProjects}</h3>
+                      <p className="text-[10px] inline-flex items-center gap-1 font-semibold text-slate-400 dark:text-slate-500 font-sans mt-0.5">
+                        Out of {totalProjects} total
+                      </p>
+                    </div>
+                    <div className="bg-slate-100 dark:bg-slate-800 p-2 text-[#115e59] rounded-xl border border-slate-200 dark:border-slate-700/50">
+                      <Building2 className="w-4.5 h-4.5" />
+                    </div>
                   </div>
                 </div>
-                <div className="bg-slate-100 dark:bg-slate-800 p-2 text-[#7C3AED] rounded-xl border border-slate-200 dark:border-slate-700/50">
-                  <ShieldCheck className="w-4.5 h-4.5" />
-                </div>
-              </div>
-            </div>
 
-            {/* Metric 5: Users */}
-            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs hover:border-slate-350 dark:hover:border-slate-700 transition-all">
-              <div className="flex justify-between items-start">
-                <div className="space-y-1">
-                  <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider font-sans">Users</p>
-                  <h3 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">{allTenantUsers.length}</h3>
-                  <p className="text-[10px] text-emerald-600 dark:text-[#16A34A] uppercase font-bold font-sans mt-0.5">
-                    Authorized Team
-                  </p>
+                {/* Metric 2: Documents */}
+                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs hover:border-slate-350 dark:hover:border-slate-700 transition-all">
+                  <div className="flex justify-between items-start">
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider font-sans">Documents</p>
+                      <h3 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">{totalDocs}</h3>
+                      <p className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold font-sans uppercase tracking-wider mt-0.5">Secure Vault Storage</p>
+                    </div>
+                    <div className="bg-slate-100 dark:bg-slate-800 p-2 text-slate-500 dark:text-slate-400 rounded-xl border border-slate-200 dark:border-slate-700/50">
+                      <FileText className="w-4.5 h-4.5" />
+                    </div>
+                  </div>
                 </div>
-                <div className="bg-[#eefcf9] dark:bg-emerald-950/20 p-2 text-emerald-600 dark:text-[#16A34A] rounded-xl border border-emerald-100 dark:border-emerald-955/30">
-                  <UserCheck className="w-4.5 h-4.5" />
+
+                {/* Metric 3: Pending Approvals */}
+                {isApprovalsModuleOn && (
+                  <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs hover:border-slate-350 dark:hover:border-slate-700 transition-all">
+                    <div className="flex justify-between items-start">
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider font-sans">Pending Approvals</p>
+                        <h3 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">{pendingApprovals}</h3>
+                        <p className={`text-[10px] font-bold font-sans mt-0.5 ${pendingApprovals > 0 ? 'text-amber-600 dark:text-[#F59E0B]' : 'text-slate-405 dark:text-slate-400'}`}>
+                          {pendingApprovals > 0 ? 'Awaiting verification' : 'All clear'}
+                        </p>
+                      </div>
+                      <div className="bg-slate-100 dark:bg-slate-800 p-2 text-[#eab308] rounded-xl border border-slate-200 dark:border-slate-700/50">
+                        <CheckSquare className="w-4.5 h-4.5" />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Metric 4: Compliance Score */}
+                {isComplianceModuleOn && (
+                  <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs hover:border-slate-350 dark:hover:border-slate-700 transition-all">
+                    <div className="flex justify-between items-start">
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider font-sans">Compliance Score</p>
+                        <h3 className="text-3xl font-black text-slate-909 dark:text-white tracking-tight">{complianceScore}%</h3>
+                        <div className="w-18 bg-slate-100 dark:bg-slate-800 h-1 mt-1 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full transition-all duration-500 bg-[#7C3AED]"
+                            style={{ width: `${complianceScore}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                      <div className="bg-slate-100 dark:bg-slate-800 p-2 text-[#7C3AED] rounded-xl border border-slate-200 dark:border-slate-700/50">
+                        <ShieldCheck className="w-4.5 h-4.5" />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Metric 5: Users */}
+                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs hover:border-slate-350 dark:hover:border-slate-700 transition-all">
+                  <div className="flex justify-between items-start">
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider font-sans">Users</p>
+                      <h3 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">{allTenantUsers.length}</h3>
+                      <p className="text-[10px] text-emerald-600 dark:text-[#16A34A] uppercase font-bold font-sans mt-0.5">
+                        Authorized Team
+                      </p>
+                    </div>
+                    <div className="bg-[#eefcf9] dark:bg-emerald-950/20 p-2 text-emerald-600 dark:text-[#16A34A] rounded-xl border border-emerald-100 dark:border-emerald-955/30">
+                      <UserCheck className="w-4.5 h-4.5" />
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
+            );
+          })()}
 
           {/* Active Properties Portfolio Status */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className={`grid grid-cols-1 ${isComplianceModuleOn ? 'lg:grid-cols-3' : ''} gap-6`}>
             
             {/* Project compliance table */}
-            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 lg:col-span-2 space-y-4 shadow-xs transition-colors duration-150">
+            <div className={`bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 ${isComplianceModuleOn ? 'lg:col-span-2' : 'lg:col-span-3'} space-y-4 shadow-xs transition-colors duration-150`}>
               <div className="flex justify-between items-center pb-3 border-b border-slate-100 dark:border-slate-800">
                 <div>
                   <h4 className="text-sm font-extrabold text-slate-900 dark:text-white font-sans tracking-tight">Active Properties Portfolio Status</h4>
@@ -244,20 +268,24 @@ export default function DashboardView({
                         <span className="text-xs font-bold text-slate-600 dark:text-slate-300">{proj.docsCount} files</span>
                       </div>
 
-                      <div className="w-20 bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden relative" title={`Score: ${proj.score}%`}>
-                        <div 
-                          className="h-full rounded-full bg-[#0EA5E9]"
-                          style={{ width: `${proj.score}%` }}
-                        ></div>
-                      </div>
+                      {isComplianceModuleOn && (
+                        <>
+                          <div className="w-20 bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden relative" title={`Score: ${proj.score}%`}>
+                            <div 
+                              className="h-full rounded-full bg-[#0EA5E9]"
+                              style={{ width: `${proj.score}%` }}
+                            ></div>
+                          </div>
 
-                      <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded-full inline-block w-14 text-center ${
-                        proj.score >= 80 ? 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-400' : 
-                        proj.score >= 50 ? 'bg-amber-50 dark:bg-amber-950/20 text-amber-805 dark:text-amber-400' : 
-                        'bg-rose-50 dark:bg-rose-950/20 text-rose-800 dark:text-rose-400'
-                      }`}>
-                        {proj.score}%
-                      </span>
+                          <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded-full inline-block w-14 text-center ${
+                            proj.score >= 80 ? 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-400' : 
+                            proj.score >= 50 ? 'bg-amber-50 dark:bg-amber-950/20 text-amber-805 dark:text-amber-400' : 
+                            'bg-rose-50 dark:bg-rose-950/20 text-rose-800 dark:text-rose-400'
+                          }`}>
+                            {proj.score}%
+                          </span>
+                        </>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -265,7 +293,8 @@ export default function DashboardView({
             </div>
 
             {/* Total Compliance Health Circle Score Gauge */}
-            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs flex flex-col justify-between transition-colors duration-150">
+            {isComplianceModuleOn && (
+              <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-850 p-5 shadow-xs flex flex-col justify-between transition-colors duration-150">
               <div>
                 <div className="pb-3 border-b border-slate-100 dark:border-slate-800">
                   <h4 className="text-sm font-extrabold text-slate-900 dark:text-white tracking-tight font-sans">Portfolio Clearance Health</h4>
@@ -350,6 +379,7 @@ export default function DashboardView({
                 </button>
               </div>
             </div>
+            )}
 
           </div>
 
@@ -373,61 +403,63 @@ export default function DashboardView({
           </div>
 
           {/* Critical Expiry Alerts */}
-          <div className="space-y-3 shrink-0">
-            <span className="text-[10px] uppercase font-bold text-slate-405 dark:text-slate-500 tracking-wider block">Risk Review Queue</span>
-            <div className="space-y-2">
-              {criticalAlerts.length === 0 && expiringRecords.length === 0 ? (
-                <div className="text-center py-4 text-slate-400 text-xs font-sans">
-                  No critical risks.
-                </div>
-              ) : (
-                <>
-                  {criticalAlerts.slice(0, 2).map(rec => {
-                    const proj = projects.find(p => p.id === rec.projectId);
-                    return (
-                      <div key={rec.id} className="p-3 bg-rose-50/40 dark:bg-rose-950/10 border border-rose-100 dark:border-rose-900/30 rounded-xl flex items-start gap-2.5">
-                        <div className="bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-[#DC2626] p-1.5 rounded-lg mt-0.5 shrink-0">
-                          <ShieldAlert className="w-3.5 h-3.5" />
-                        </div>
-                        <div className="flex-1 min-w-0 space-y-0.5 font-sans">
-                          <div className="flex items-center justify-between gap-1">
-                            <span className="text-[8px] font-extrabold text-rose-700 dark:text-[#DC2626] bg-rose-100/40 dark:bg-rose-950/30 px-1 py-0.5 rounded">
-                              HAZARD
-                            </span>
-                            <span className="text-[9px] font-mono font-bold text-slate-400">{proj?.code}</span>
+          {isComplianceModuleOn && (
+            <div className="space-y-3 shrink-0">
+              <span className="text-[10px] uppercase font-bold text-slate-405 dark:text-slate-500 tracking-wider block">Risk Review Queue</span>
+              <div className="space-y-2">
+                {criticalAlerts.length === 0 && expiringRecords.length === 0 ? (
+                  <div className="text-center py-4 text-slate-400 text-xs font-sans">
+                    No critical risks.
+                  </div>
+                ) : (
+                  <>
+                    {criticalAlerts.slice(0, 2).map(rec => {
+                      const proj = projects.find(p => p.id === rec.projectId);
+                      return (
+                        <div key={rec.id} className="p-3 bg-rose-50/40 dark:bg-rose-950/10 border border-rose-100 dark:border-rose-900/30 rounded-xl flex items-start gap-2.5">
+                          <div className="bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-[#DC2626] p-1.5 rounded-lg mt-0.5 shrink-0">
+                            <ShieldAlert className="w-3.5 h-3.5" />
                           </div>
-                          <h5 className="font-bold text-[11px] text-slate-800 dark:text-slate-200 truncate">{rec.complianceType}</h5>
-                          <p className="text-[10.5px] text-slate-500 dark:text-slate-400 leading-normal font-medium">
-                            Filing rejected or expired. Urgent renewal requested.
-                          </p>
-                        </div>
-                      </div>
-                    );
-                  })}
-                  {expiringRecords.filter(r => r.status === 'Approved').slice(0, 1).map(rec => {
-                    const proj = projects.find(p => p.id === rec.projectId);
-                    return (
-                      <div key={rec.id} className="p-3 bg-amber-50/30 dark:bg-amber-950/10 border border-amber-105 dark:border-amber-900/30 rounded-xl flex items-start gap-2.5">
-                        <div className="bg-amber-100 dark:bg-amber-900/40 text-amber-750 dark:text-[#F59E0B] p-1.5 rounded-lg mt-0.5 shrink-0">
-                          <Calendar className="w-3.5 h-3.5" />
-                        </div>
-                        <div className="flex-1 min-w-0 space-y-0.5 font-sans">
-                          <div className="flex items-center justify-between gap-1">
-                            <span className="text-[8px] font-extrabold text-amber-700 dark:text-[#F59E0B] bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded">
-                              RENEWAL RISK
-                            </span>
-                            <span className="text-[9px] font-mono font-bold text-slate-400">{proj?.code}</span>
+                          <div className="flex-1 min-w-0 space-y-0.5 font-sans">
+                            <div className="flex items-center justify-between gap-1">
+                              <span className="text-[8px] font-extrabold text-rose-700 dark:text-[#DC2626] bg-rose-100/40 dark:bg-rose-950/30 px-1 py-0.5 rounded">
+                                HAZARD
+                              </span>
+                              <span className="text-[9px] font-mono font-bold text-slate-400">{proj?.code}</span>
+                            </div>
+                            <h5 className="font-bold text-[11px] text-slate-800 dark:text-slate-200 truncate">{rec.complianceType}</h5>
+                            <p className="text-[10.5px] text-slate-500 dark:text-slate-400 leading-normal font-medium">
+                              Filing rejected or expired. Urgent renewal requested.
+                            </p>
                           </div>
-                          <h5 className="font-bold text-[11px] text-slate-800 dark:text-slate-200 truncate">{rec.complianceType}</h5>
-                          <p className="text-[10.5px] text-slate-500 dark:text-slate-400 leading-normal font-medium">Expires on {rec.expiryDate}</p>
                         </div>
-                      </div>
-                    );
-                  })}
-                </>
-              )}
+                      );
+                    })}
+                    {expiringRecords.filter(r => r.status === 'Approved').slice(0, 1).map(rec => {
+                      const proj = projects.find(p => p.id === rec.projectId);
+                      return (
+                        <div key={rec.id} className="p-3 bg-amber-50/30 dark:bg-amber-950/10 border border-amber-105 dark:border-amber-900/30 rounded-xl flex items-start gap-2.5">
+                          <div className="bg-amber-100 dark:bg-amber-900/40 text-amber-750 dark:text-[#F59E0B] p-1.5 rounded-lg mt-0.5 shrink-0">
+                            <Calendar className="w-3.5 h-3.5" />
+                          </div>
+                          <div className="flex-1 min-w-0 space-y-0.5 font-sans">
+                            <div className="flex items-center justify-between gap-1">
+                              <span className="text-[8px] font-extrabold text-amber-700 dark:text-[#F59E0B] bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded">
+                                RENEWAL RISK
+                              </span>
+                              <span className="text-[9px] font-mono font-bold text-slate-400">{proj?.code}</span>
+                            </div>
+                            <h5 className="font-bold text-[11px] text-slate-800 dark:text-slate-200 truncate">{rec.complianceType}</h5>
+                            <p className="text-[10.5px] text-slate-500 dark:text-slate-400 leading-normal font-medium">Expires on {rec.expiryDate}</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </>
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Secure Audit Trail Feed (Immutable list) */}
           <div className="flex-1 flex flex-col min-h-0 space-y-3">

@@ -19,7 +19,7 @@ export type DocumentCategory =
   | 'Customer Handover'
   | 'Litigation';
 
-export type DocumentStatus = 'Pending' | 'Approved' | 'Rejected' | 'Revision Required';
+export type DocumentStatus = 'Draft' | 'Active' | 'Archived' | 'Expired';
 
 export type ComplianceType =
   | 'RERA Registration'

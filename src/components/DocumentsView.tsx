@@ -54,12 +54,15 @@ export default function DocumentsView({
   const settings = settingsService.getTenantSettings(selectedOrgId || 'org-1');
   const categories = (settings?.projects?.documentCategories as DocumentCategory[]) || CATEGORIES;
 
+  const isApprovalsModuleOn = settings?.subscription?.enabledModules?.includes('approvals') ?? false;
+  const isComplianceModuleOn = settings?.subscription?.enabledModules?.includes('compliance') ?? false;
+
   // Navigation & list controls
   const [selectedProjectId, setSelectedProjectId] = useState<string>('all');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [isProjectDropdownOpen, setIsProjectDropdownOpen] = useState(false);
   const [search, setSearch] = useState('');
-  const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'draft' | 'active' | 'archived' | 'expired'>('all');
   
   // Create / Upload State
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -270,9 +273,10 @@ export default function DocumentsView({
     
     const matchesTab = 
       activeTab === 'all' ||
-      (activeTab === 'pending' && doc.status === 'Pending') ||
-      (activeTab === 'approved' && doc.status === 'Approved') ||
-      (activeTab === 'rejected' && (doc.status === 'Rejected' || doc.status === 'Revision Required'));
+      (activeTab === 'draft' && doc.status === 'Draft') ||
+      (activeTab === 'active' && doc.status === 'Active') ||
+      (activeTab === 'archived' && doc.status === 'Archived') ||
+      (activeTab === 'expired' && doc.status === 'Expired');
 
     return matchesProject && matchesCategory && matchesSearch && matchesTab;
   });
@@ -452,10 +456,11 @@ export default function DocumentsView({
             {/* Document Approval States Tabs */}
             <div className="flex border-t border-slate-100 pt-3 gap-1 overflow-x-auto text-[11px]">
               {[
-                { id: 'all', label: 'All Cataloged Records' },
-                { id: 'pending', label: 'Awaiting Verification' },
-                { id: 'approved', label: 'Approved & Active' },
-                { id: 'rejected', label: 'Revisions & Queries' }
+                { id: 'all', label: 'All Documents' },
+                { id: 'draft', label: 'Draft' },
+                { id: 'active', label: 'Active' },
+                { id: 'archived', label: 'Archived' },
+                { id: 'expired', label: 'Expired' }
               ].map(tab => (
                 <button
                   key={tab.id}
@@ -586,13 +591,15 @@ export default function DocumentsView({
 
                           <td className="py-3.5 px-4">
                             <span className={`inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider px-2.5 py-0.5 rounded-full ${
-                              doc.status === 'Approved' ? 'bg-emerald-50 text-emerald-700' :
-                              doc.status === 'Pending' ? 'bg-amber-50 text-amber-700' :
+                              doc.status === 'Active' ? 'bg-emerald-50 text-emerald-700' :
+                              doc.status === 'Draft' ? 'bg-amber-50 text-amber-700' :
+                              doc.status === 'Archived' ? 'bg-slate-100 text-slate-700' :
                               'bg-rose-50 text-rose-700'
                             }`}>
                               <span className={`w-1.5 h-1.5 rounded-full ${
-                                doc.status === 'Approved' ? 'bg-emerald-500' :
-                                doc.status === 'Pending' ? 'bg-amber-500' :
+                                doc.status === 'Active' ? 'bg-emerald-500' :
+                                doc.status === 'Draft' ? 'bg-amber-500' :
+                                doc.status === 'Archived' ? 'bg-slate-500' :
                                 'bg-rose-500'
                               }`}></span>
                               {doc.status}
@@ -693,7 +700,7 @@ export default function DocumentsView({
               </div>
 
               {/* Request Validation Workflow trigger */}
-              {previewDoc.status !== 'Approved' && !isDocUnderActiveApproval && (
+              {isApprovalsModuleOn && previewDoc.status !== 'Active' && !isDocUnderActiveApproval && (
                 <div className="space-y-2 bg-slate-50 p-4 rounded-xl border border-slate-200">
                   <h4 className="text-xs font-semibold text-slate-800">Dispatch Statutory Validation Workflow</h4>
                   <p className="text-[11px] text-slate-505">Initiates formal workspace reviews from the Legal Team and Compliance Officers.</p>
@@ -877,7 +884,7 @@ export default function DocumentsView({
               </div>
 
               <div className="space-y-1">
-                <label className="font-semibold text-slate-600 block">Initial Commit Comment</label>
+                <label className="font-semibold text-slate-600 block">Initial Upload Comment</label>
                 <input
                   type="text"
                   placeholder="e.g. Draft parameters compiled by site legal desk..."
@@ -896,7 +903,7 @@ export default function DocumentsView({
                     : 'bg-slate-900 hover:bg-slate-800 text-white border border-slate-950 cursor-pointer'
                 }`}
               >
-                Commit & Upload Secure Cloud node
+                Upload Document
               </button>
 
             </form>

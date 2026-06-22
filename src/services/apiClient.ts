@@ -3,6 +3,23 @@ import {
   ApprovalTask, ActivityLog, User, Notification, Organization 
 } from '../types';
 
+export const mapDocumentStatus = (backendStatus: string): 'Draft' | 'Active' | 'Archived' | 'Expired' => {
+  const status = (backendStatus || '').toLowerCase();
+  if (status.includes('approve') || status.includes('clearance') || status.includes('granted') || status.includes('active')) {
+    return 'Active';
+  }
+  if (status.includes('await') || status.includes('pend') || status.includes('revis') || status.includes('draft')) {
+    return 'Draft';
+  }
+  if (status.includes('reject') || status.includes('archiv')) {
+    return 'Archived';
+  }
+  if (status.includes('expir')) {
+    return 'Expired';
+  }
+  return 'Active'; // Default fallback
+};
+
 export class ApiClient {
   private static async request<T>(
     endpoint: string,
@@ -193,7 +210,7 @@ export class ApiClient {
       uploadedBy: d.latest_version?.publisher?.name || d.uploaded_by || 'Staff',
       uploadedRole: d.latest_version?.publisher?.role?.name || 'Site Engineer',
       latestVersion: d.latest_version?.version_number || d.latest_version || 1,
-      status: d.status || 'Pending',
+      status: mapDocumentStatus(d.status || 'Pending'),
       description: d.description || '',
     }));
   }
@@ -237,7 +254,7 @@ export class ApiClient {
       uploadedBy: d.latest_version?.publisher?.name || 'Staff',
       uploadedRole: 'Director',
       latestVersion: d.latest_version?.version_number || 1,
-      status: d.status || 'Pending',
+      status: mapDocumentStatus(d.status || 'Pending'),
       description: payload.comment || '',
     };
 

@@ -387,7 +387,7 @@ export default function ComplianceView({
                 type="submit"
                 className="w-full bg-slate-900 hover:bg-slate-800 text-white font-semibold py-2.5 rounded-lg border border-slate-950 cursor-pointer shadow-3xs"
               >
-                Commit Manual Compliance Audit Override
+                Save Manual Compliance Audit Override
               </button>
 
             </form>

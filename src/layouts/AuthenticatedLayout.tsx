@@ -95,9 +95,8 @@ export default function AuthenticatedLayout() {
     // Find matching role authorization boundaries
     const rolePermissionDef = settings?.rolePermissions?.find(rp => rp.roleName === role);
     const isModuleAllowed = (moduleId: string) => {
-      // General safety guards
-      if (role === 'Super Admin') return true;
       const isConfigEnabled = enabledModules.includes(moduleId);
+      if (role === 'Super Admin') return isConfigEnabled;
       const isRoleGranted = rolePermissionDef ? rolePermissionDef.modulesEnabled.includes(moduleId) : true;
       return isConfigEnabled && isRoleGranted;
     };

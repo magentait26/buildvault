@@ -468,7 +468,7 @@ export default function ProjectsView({
                               <span className="text-[10px] text-slate-400 block font-mono">{doc.id} • latest v{doc.latestVersion}</span>
                             </div>
                             <span className={`text-[10px] uppercase font-semibold px-2 py-0.5 rounded-full ${
-                              doc.status === 'Approved' ? 'bg-emerald-50 text-emerald-800' : 'bg-slate-100 text-slate-650'
+                              doc.status === 'Active' ? 'bg-emerald-50 text-emerald-800' : 'bg-slate-100 text-slate-650'
                             }`}>
                               {doc.status}
                             </span>

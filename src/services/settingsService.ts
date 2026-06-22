@@ -382,12 +382,19 @@ const DEFAULT_SETTINGS = (orgId: string, orgName: string): TenantSettings => ({
     planName: orgId === 'org-1' ? 'Enterprise' : orgId === 'org-2' ? 'Growth' : 'Starter',
     status: 'Active',
     enabledModules: orgId === 'org-1' 
-      ? ['dashboard', 'projects', 'documents', 'compliance', 'approvals', 'integrations', 'settings', 'alerts', 'users']
-      : orgId === 'org-2'
-        ? ['dashboard', 'projects', 'documents', 'compliance', 'settings', 'alerts']
-        : ['dashboard', 'projects', 'documents', 'settings']
+      ? ['dashboard', 'projects', 'documents', 'settings', 'users']
+      : ['dashboard', 'projects', 'documents', 'settings']
   }
 });
+
+// Auto-migration wrapper to clean old settings once
+const migrationKey = 'buildvault_has_migrated_modules_reset_v4';
+if (typeof localStorage !== 'undefined' && localStorage.getItem(migrationKey) !== 'true') {
+  localStorage.removeItem('buildvault_settings_tenant_org-1');
+  localStorage.removeItem('buildvault_settings_tenant_org-2');
+  localStorage.removeItem('buildvault_settings_tenant_org-3');
+  localStorage.setItem(migrationKey, 'true');
+}
 
 export const settingsService = {
   /**
